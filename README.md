@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Next.js App Router project with NextAuth credentials login integrated to backend JWT.
+
+## Auth Flow
+
+- Login endpoint: `POST /api/auth/login`
+- Request body:
+
+```json
+{
+	"username": "string",
+	"password": "string"
+}
+```
+
+- Success response:
+
+```json
+{
+	"accessToken": "jwt_token_here",
+	"tokenType": "Bearer"
+}
+```
+
+- Frontend stores JWT in NextAuth JWT session.
+- Protected calls must send: `Authorization: Bearer <accessToken>`.
+- FE handles:
+	- `401`: invalid login or invalid/expired token
+	- `403`: authenticated but insufficient role
+
+## Environment Variables
+
+Create `.env.local`:
+
+```bash
+BACKEND_BASE_URL=http://localhost:8080
+NEXTAUTH_SECRET=replace-with-a-long-random-secret
+NEXTAUTH_URL=http://localhost:3000
+```
 
 ## Getting Started
 
-First, run the development server:
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Pages
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/login`: login form using NextAuth credentials provider
+- `/`: home page, requires authenticated session
 
-## Learn More
+## Calling Protected Backend API
 
-To learn more about Next.js, take a look at the following resources:
+Server-side helper is available at `lib/backend-api.ts`:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```ts
+import { fetchBackend } from "@/lib/backend-api";
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+const response = await fetchBackend("/api/projects");
+const data = await response.json();
+```
