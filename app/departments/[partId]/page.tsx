@@ -21,7 +21,7 @@ export default async function DepartmentDetailPage({ params }: RouteProps) {
   return (
     <HomeContent
       initialFullName={session.user?.name ?? "Unknown User"}
-      initialRole={session.role ?? "N/A"}
+      initialAccessMode={session.role === "ROLE_ADMIN" ? "ADMIN" : "NONE"}
       viewMode="department"
       selectedDepartmentId={Number.isFinite(numericPartId) ? numericPartId : undefined}
     />

@@ -4,18 +4,32 @@ import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import { Avatar, Button, Dropdown, Layout, Space, Tabs, Typography, type MenuProps } from "antd";
-import { logoutFromBackend } from "@/lib/management-api";
+import { type AccessMode, logoutFromBackend } from "@/lib/management-api";
 
 type HomeHeaderProps = {
   fullName: string;
-  role: string;
+  accessMode: AccessMode;
   viewMode: "department" | "project";
+  availableViewModes: Array<"department" | "project">;
   sidebarCollapsed: boolean;
   onToggleSidebar: () => void;
 };
 
-export function HomeHeader({ fullName, role, viewMode, sidebarCollapsed, onToggleSidebar }: HomeHeaderProps) {
+export function HomeHeader({
+  fullName,
+  accessMode,
+  viewMode,
+  availableViewModes,
+  sidebarCollapsed,
+  onToggleSidebar,
+}: HomeHeaderProps) {
   const router = useRouter();
+
+  const tabItems = availableViewModes.map((mode) => ({
+    key: mode,
+    label: <span className="text-base font-semibold">{mode === "department" ? "Department" : "Project"}</span>,
+  }));
+
   const profileMenuItems: MenuProps["items"] = [
     {
       key: "signout",
@@ -46,24 +60,23 @@ export function HomeHeader({ fullName, role, viewMode, sidebarCollapsed, onToggl
             Codei Project Management
           </Typography.Title>
 
-          <Tabs
-            size="small"
-            className="!mb-0"
-            tabBarStyle={{ margin: 0 }}
-            activeKey={viewMode}
-            onChange={(key) => {
-              router.push(key === "department" ? "/departments" : "/projects");
-            }}
-            items={[
-              { key: "department", label: <span className="text-base font-semibold">Department</span> },
-              { key: "project", label: <span className="text-base font-semibold">Project</span> },
-            ]}
-          />
+          {tabItems.length > 0 ? (
+            <Tabs
+              size="small"
+              className="!mb-0"
+              tabBarStyle={{ margin: 0 }}
+              activeKey={viewMode}
+              onChange={(key) => {
+                router.push(key === "department" ? "/departments" : "/projects");
+              }}
+              items={tabItems}
+            />
+          ) : null}
         </div>
 
         <Space size="middle" align="center" wrap>
           <Typography.Text strong>{fullName}</Typography.Text>
-          <Typography.Text type="secondary">{role || "UNKNOWN_ROLE"}</Typography.Text>
+          <Typography.Text type="secondary">{accessMode}</Typography.Text>
 
           <Dropdown menu={{ items: profileMenuItems }} trigger={["click"]}>
             <Avatar className="cursor-pointer">{fullName.slice(0, 1).toUpperCase()}</Avatar>

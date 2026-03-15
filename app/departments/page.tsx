@@ -12,7 +12,7 @@ export default async function DepartmentsPage() {
   return (
     <HomeContent
       initialFullName={session.user?.name ?? "Unknown User"}
-      initialRole={session.role ?? "N/A"}
+      initialAccessMode={session.role === "ROLE_ADMIN" ? "ADMIN" : "NONE"}
       viewMode="department"
     />
   );

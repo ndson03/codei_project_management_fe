@@ -13,7 +13,7 @@ export default async function ProjectCreatePage() {
   return (
     <AppShell
       initialFullName={session.user?.name ?? "Unknown User"}
-      initialRole={session.role ?? "N/A"}
+      initialAccessMode={session.role === "ROLE_ADMIN" ? "ADMIN" : "NONE"}
       viewMode="project"
     >
       <ProjectCreateForm />

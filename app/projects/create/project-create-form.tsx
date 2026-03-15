@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
-import { Alert, Button, Card, Form, Input, InputNumber, Space, Typography, message } from "antd";
-import { createProject, HttpError } from "@/lib/management-api";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Alert, Button, Card, Form, Input, Select, Space, Typography, message } from "antd";
+import { createProject, getDepartments, getUsers, HttpError } from "@/lib/management-api";
 
 function parseCsv(value: string) {
   return value
@@ -25,6 +25,16 @@ export function ProjectCreateForm() {
   const searchParams = useSearchParams();
   const deptIdFromQuery = searchParams.get("deptId");
   const defaultDeptId = deptIdFromQuery ? Number(deptIdFromQuery) : undefined;
+
+  const departmentsQuery = useQuery({
+    queryKey: ["departments"],
+    queryFn: getDepartments,
+  });
+
+  const usersQuery = useQuery({
+    queryKey: ["users"],
+    queryFn: getUsers,
+  });
 
   const createProjectMutation = useMutation({
     mutationFn: createProject,
@@ -48,11 +58,19 @@ export function ProjectCreateForm() {
             repositories: parseCsv(values.repositories || ""),
             pics: parseCsv(values.pics || ""),
             devWhiteList: parseCsv(values.devWhiteList || ""),
+            pmUserIds: values.pmUserIds || [],
           });
         }}
       >
-        <Form.Item name="deptId" label="Department ID" rules={[{ required: true }]}>
-          <InputNumber className="!w-full" />
+        <Form.Item name="deptId" label="Department" rules={[{ required: true }]}>
+          <Select
+            loading={departmentsQuery.isLoading}
+            options={(departmentsQuery.data ?? []).map((department) => ({
+              value: department.partId,
+              label: `${department.partName} (#${department.partId})`,
+            }))}
+            placeholder="Select department"
+          />
         </Form.Item>
         <Form.Item name="projectName" label="Project Name" rules={[{ required: true }]}>
           <Input />
@@ -74,6 +92,18 @@ export function ProjectCreateForm() {
         </Form.Item>
         <Form.Item name="devWhiteList" label="Dev White List (comma separated)">
           <Input placeholder="dev01, dev02" />
+        </Form.Item>
+        <Form.Item name="pmUserIds" label="PM Users">
+          <Select
+            mode="multiple"
+            allowClear
+            loading={usersQuery.isLoading}
+            options={(usersQuery.data ?? []).map((user) => ({
+              value: user.id,
+              label: `${user.fullname} (${user.username})`,
+            }))}
+            placeholder="Select PM users"
+          />
         </Form.Item>
 
         <Space>

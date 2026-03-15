@@ -21,7 +21,7 @@ export default async function ProjectDetailPage({ params }: RouteProps) {
   return (
     <HomeContent
       initialFullName={session.user?.name ?? "Unknown User"}
-      initialRole={session.role ?? "N/A"}
+      initialAccessMode={session.role === "ROLE_ADMIN" ? "ADMIN" : "NONE"}
       viewMode="project"
       selectedProjectId={Number.isFinite(numericProjectId) ? numericProjectId : undefined}
     />

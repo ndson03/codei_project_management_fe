@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMutation } from "@tanstack/react-query";
-import { Alert, Button, Card, Form, Input, InputNumber, Space, Typography, message } from "antd";
-import { createDepartment, HttpError } from "@/lib/management-api";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Alert, Button, Card, Form, Input, InputNumber, Select, Space, Typography, message } from "antd";
+import { createDepartment, getUsers, HttpError } from "@/lib/management-api";
 
 function renderMutationError(mutationError: unknown) {
   if (!(mutationError instanceof HttpError)) {
@@ -14,6 +14,11 @@ function renderMutationError(mutationError: unknown) {
 }
 
 export function DepartmentCreateForm() {
+  const usersQuery = useQuery({
+    queryKey: ["users"],
+    queryFn: getUsers,
+  });
+
   const createDepartmentMutation = useMutation({
     mutationFn: createDepartment,
     onSuccess: () => {
@@ -36,6 +41,7 @@ export function DepartmentCreateForm() {
             jiraSecPat: values.jiraSecPat,
             jiraMxPat: values.jiraMxPat,
             jiraLaPat: values.jiraLaPat,
+            departmentPicUserId: values.departmentPicUserId,
           });
         }}
       >
@@ -65,6 +71,17 @@ export function DepartmentCreateForm() {
         </Form.Item>
         <Form.Item name="jiraLaPat" label="Jira LA PAT" rules={[{ required: true }]}>
           <Input />
+        </Form.Item>
+        <Form.Item name="departmentPicUserId" label="Department PIC User">
+          <Select
+            allowClear
+            loading={usersQuery.isLoading}
+            options={(usersQuery.data ?? []).map((user) => ({
+              value: user.id,
+              label: `${user.fullname} (${user.username})`,
+            }))}
+            placeholder="Select PIC user"
+          />
         </Form.Item>
 
         <Space>

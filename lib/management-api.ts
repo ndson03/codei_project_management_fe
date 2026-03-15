@@ -1,12 +1,21 @@
+export type AccessMode = "ADMIN" | "PIC" | "PM" | "NONE";
+
 export type CurrentUser = {
   id: number;
   username: string;
   fullname: string;
   email: string;
-  role: string;
+  accessMode: AccessMode;
+  departmentPicPartIds: number[];
+  pmProjectIds: number[];
 };
 
-export type UserResponse = CurrentUser;
+export type UserResponse = {
+  id: number;
+  username: string;
+  fullname: string;
+  email: string;
+};
 
 export type CreateDepartmentRequest = {
   partId: number;
@@ -18,17 +27,21 @@ export type CreateDepartmentRequest = {
   jiraSecPat: string;
   jiraMxPat: string;
   jiraLaPat: string;
+  departmentPicUserId?: number;
 };
 
 export type DepartmentResponse = {
   partId: number;
   partName: string;
+  gitPat: string;
+  ecodePat: string;
+  gerritUserName: string;
+  gerritHttpPassword: string;
+  jiraSecPat: string;
+  jiraMxPat: string;
+  jiraLaPat: string;
   departmentPicUserId: number | null;
-};
-
-export type AssignDeptPicRequest = {
-  deptId: number;
-  userId: number;
+  departmentPicUsername: string | null;
 };
 
 export type CreateProjectRequest = {
@@ -40,6 +53,7 @@ export type CreateProjectRequest = {
   repositories: string[];
   pics: string[];
   devWhiteList: string[];
+  pmUserIds: number[];
 };
 
 export type UpdateDepartmentRequest = {
@@ -52,6 +66,7 @@ export type UpdateDepartmentRequest = {
   jiraSecPat: string;
   jiraMxPat: string;
   jiraLaPat: string;
+  departmentPicUserId?: number;
 };
 
 export type ProjectResponse = {
@@ -65,17 +80,6 @@ export type ProjectResponse = {
   pics: string[];
   devWhiteList: string[];
   pmUserIds: number[];
-};
-
-export type AssignProjectPmRequest = {
-  projectId: number;
-  userId: number;
-};
-
-export type UpdateProjectRequest = {
-  projectId: number;
-  branch: string;
-  repositories: string[];
 };
 
 export class HttpError extends Error {
@@ -157,13 +161,6 @@ export function createDepartment(payload: CreateDepartmentRequest) {
   });
 }
 
-export function assignDepartmentPic(payload: AssignDeptPicRequest) {
-  return requestJson<DepartmentResponse>(`/api/admin/departments/${payload.deptId}/pic`, {
-    method: "PUT",
-    body: JSON.stringify({ userId: payload.userId }),
-  });
-}
-
 export function createProject(payload: CreateProjectRequest) {
   return requestJson<ProjectResponse>(`/api/departments/${payload.deptId}/projects`, {
     method: "POST",
@@ -175,23 +172,7 @@ export function createProject(payload: CreateProjectRequest) {
       repositories: payload.repositories,
       pics: payload.pics,
       devWhiteList: payload.devWhiteList,
-    }),
-  });
-}
-
-export function assignProjectPm(payload: AssignProjectPmRequest) {
-  return requestJson<ProjectResponse>(`/api/projects/${payload.projectId}/pm`, {
-    method: "PUT",
-    body: JSON.stringify({ userId: payload.userId }),
-  });
-}
-
-export function updateProject(payload: UpdateProjectRequest) {
-  return requestJson<ProjectResponse>(`/api/projects/${payload.projectId}`, {
-    method: "PUT",
-    body: JSON.stringify({
-      branch: payload.branch,
-      repositories: payload.repositories,
+      pmUserIds: payload.pmUserIds,
     }),
   });
 }
@@ -208,6 +189,7 @@ export function updateDepartment(payload: UpdateDepartmentRequest) {
       jiraSecPat: payload.jiraSecPat,
       jiraMxPat: payload.jiraMxPat,
       jiraLaPat: payload.jiraLaPat,
+      departmentPicUserId: payload.departmentPicUserId,
     }),
   });
 }
@@ -240,6 +222,7 @@ export function updateProjectData(payload: CreateProjectRequest & { projectId: n
       repositories: payload.repositories,
       pics: payload.pics,
       devWhiteList: payload.devWhiteList,
+      pmUserIds: payload.pmUserIds,
     }),
   });
 }

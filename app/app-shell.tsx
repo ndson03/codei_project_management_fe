@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Alert, Layout, Space } from "antd";
 import { signOut } from "next-auth/react";
-import { getCurrentUser, getDepartments, getProjects, HttpError } from "@/lib/management-api";
+import { type AccessMode, getCurrentUser, getDepartments, getProjects, HttpError } from "@/lib/management-api";
 import { CommonLeftbar } from "./common-leftbar";
 import { HomeHeader } from "./home-header";
 
@@ -13,21 +13,24 @@ type ViewMode = "department" | "project";
 
 type AppShellProps = {
   initialFullName: string;
-  initialRole: string;
+  initialAccessMode: AccessMode;
   viewMode: ViewMode;
   children: React.ReactNode;
 };
 
-function normalizeRole(rawRole: string | undefined) {
-  if (!rawRole) {
-    return "";
+function getAvailableViewModes(accessMode: AccessMode) {
+  if (accessMode === "ADMIN") {
+    return ["department", "project"] as const;
   }
 
-  const upper = rawRole.trim().toUpperCase();
-  return upper.startsWith("ROLE_") ? upper.slice(5) : upper;
+  if (accessMode === "PIC" || accessMode === "PM") {
+    return ["project"] as const;
+  }
+
+  return [] as const;
 }
 
-export function AppShell({ initialFullName, initialRole, viewMode, children }: AppShellProps) {
+export function AppShell({ initialFullName, initialAccessMode, viewMode, children }: AppShellProps) {
   const router = useRouter();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -47,7 +50,8 @@ export function AppShell({ initialFullName, initialRole, viewMode, children }: A
   });
 
   const fullName = currentUser?.fullname ?? initialFullName;
-  const role = normalizeRole(currentUser?.role ?? initialRole);
+  const accessMode = currentUser?.accessMode ?? initialAccessMode;
+  const availableViewModes = getAvailableViewModes(accessMode);
 
   const departments = useMemo(() => departmentsQuery.data ?? [], [departmentsQuery.data]);
   const projects = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
@@ -78,12 +82,22 @@ export function AppShell({ initialFullName, initialRole, viewMode, children }: A
     }
   }, [currentUserError, departmentsQuery.error, projectsQuery.error]);
 
+  useEffect(() => {
+    if (availableViewModes.length === 0) {
+      return;
+    }
+
+    if (!availableViewModes.some((mode) => mode === viewMode)) {
+      router.replace(availableViewModes[0] === "department" ? "/departments" : "/projects");
+    }
+  }, [availableViewModes, router, viewMode]);
+
   function canCreateDepartment() {
-    return role === "ADMIN";
+    return accessMode === "ADMIN";
   }
 
   function canCreateProject() {
-    return role === "DEPT_PIC";
+    return accessMode === "PIC";
   }
 
   function goToCreateRoute() {
@@ -92,7 +106,9 @@ export function AppShell({ initialFullName, initialRole, viewMode, children }: A
       return;
     }
 
-    router.push("/projects/create");
+    const defaultDepartmentId = departments[0]?.partId;
+    const deptQuery = defaultDepartmentId ? `?deptId=${defaultDepartmentId}` : "";
+    router.push(`/projects/create${deptQuery}`);
   }
 
   function handleLeftbarSelect(id: number) {
@@ -108,8 +124,9 @@ export function AppShell({ initialFullName, initialRole, viewMode, children }: A
     <Layout className="h-screen overflow-hidden bg-slate-100">
       <HomeHeader
         fullName={fullName}
-        role={role}
+        accessMode={accessMode}
         viewMode={viewMode}
+        availableViewModes={[...availableViewModes]}
         sidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
       />

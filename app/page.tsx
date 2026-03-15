@@ -8,5 +8,5 @@ export default async function HomePage() {
     redirect("/login");
   }
 
-  redirect("/departments");
+  redirect(session.role === "ROLE_ADMIN" ? "/departments" : "/projects");
 }

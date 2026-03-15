@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Alert, Button, Card, Empty, Form, Input, InputNumber, Space, Typography, message } from "antd";
-import { getProjects, HttpError, updateProjectData } from "@/lib/management-api";
+import { Alert, Button, Card, Empty, Form, Input, Select, Space, Typography, message } from "antd";
+import { getCurrentUser, getProjects, getUsers, HttpError, updateProjectData } from "@/lib/management-api";
 
 type ProjectEditFormProps = {
   projectId: number;
@@ -33,6 +33,16 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
     queryFn: getProjects,
   });
 
+  const usersQuery = useQuery({
+    queryKey: ["users"],
+    queryFn: getUsers,
+  });
+
+  const currentUserQuery = useQuery({
+    queryKey: ["current-user"],
+    queryFn: getCurrentUser,
+  });
+
   const project = useMemo(
     () => (projectsQuery.data ?? []).find((item) => item.id === projectId),
     [projectsQuery.data, projectId],
@@ -44,6 +54,8 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
       message.success("Project updated");
     },
   });
+
+  const canManagePmAssignments = currentUserQuery.data?.accessMode === "PIC";
 
   if (projectsQuery.isLoading) {
     return <Card className="shadow-sm">Loading project...</Card>;
@@ -71,6 +83,7 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
           repositories: project.repositories.join(", "),
           pics: project.pics.join(", "),
           devWhiteList: project.devWhiteList.join(", "),
+          pmUserIds: project.pmUserIds,
         }}
         onFinish={(values) => {
           updateMutation.mutate({
@@ -83,11 +96,15 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
             repositories: parseCsv(values.repositories || ""),
             pics: parseCsv(values.pics || ""),
             devWhiteList: parseCsv(values.devWhiteList || ""),
+            pmUserIds: canManagePmAssignments ? values.pmUserIds || [] : project.pmUserIds,
           });
         }}
       >
         <Form.Item name="deptId" label="Department ID" rules={[{ required: true }]}>
-          <InputNumber className="!w-full" disabled />
+          <Select
+            disabled
+            options={[{ value: project.departmentId, label: String(project.departmentId) }]}
+          />
         </Form.Item>
         <Form.Item name="projectName" label="Project Name" rules={[{ required: true }]}>
           <Input />
@@ -110,6 +127,20 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
         <Form.Item name="devWhiteList" label="Dev White List (comma separated)">
           <Input />
         </Form.Item>
+        {canManagePmAssignments ? (
+          <Form.Item name="pmUserIds" label="PM Users">
+            <Select
+              mode="multiple"
+              allowClear
+              loading={usersQuery.isLoading}
+              options={(usersQuery.data ?? []).map((user) => ({
+                value: user.id,
+                label: `${user.fullname} (${user.username})`,
+              }))}
+              placeholder="Select PM users"
+            />
+          </Form.Item>
+        ) : null}
 
         <Space>
           <Button type="primary" htmlType="submit" loading={updateMutation.isPending}>

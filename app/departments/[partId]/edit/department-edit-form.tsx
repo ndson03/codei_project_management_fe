@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Alert, Button, Card, Empty, Form, Input, Space, Typography, message } from "antd";
-import { getDepartments, HttpError, updateDepartment } from "@/lib/management-api";
+import { Alert, Button, Card, Empty, Form, Input, Select, Space, Typography, message } from "antd";
+import { getDepartments, getUsers, HttpError, updateDepartment } from "@/lib/management-api";
 
 type DepartmentEditFormProps = {
   partId: number;
@@ -24,6 +24,11 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
   const departmentsQuery = useQuery({
     queryKey: ["departments"],
     queryFn: getDepartments,
+  });
+
+  const usersQuery = useQuery({
+    queryKey: ["users"],
+    queryFn: getUsers,
   });
 
   const department = useMemo(
@@ -58,12 +63,13 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
         initialValues={{
           partName: department.partName,
           gitPat: "",
-          ecodePat: "",
-          gerritUserName: "",
-          gerritHttpPassword: "",
-          jiraSecPat: "",
-          jiraMxPat: "",
-          jiraLaPat: "",
+          ecodePat: department.ecodePat,
+          gerritUserName: department.gerritUserName,
+          gerritHttpPassword: department.gerritHttpPassword,
+          jiraSecPat: department.jiraSecPat,
+          jiraMxPat: department.jiraMxPat,
+          jiraLaPat: department.jiraLaPat,
+          departmentPicUserId: department.departmentPicUserId ?? undefined,
         }}
         onFinish={(values) => {
           updateMutation.mutate({
@@ -76,6 +82,7 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
             jiraSecPat: values.jiraSecPat,
             jiraMxPat: values.jiraMxPat,
             jiraLaPat: values.jiraLaPat,
+            departmentPicUserId: values.departmentPicUserId,
           });
         }}
       >
@@ -102,6 +109,17 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
         </Form.Item>
         <Form.Item name="jiraLaPat" label="Jira LA PAT" rules={[{ required: true }]}>
           <Input />
+        </Form.Item>
+        <Form.Item name="departmentPicUserId" label="Department PIC User">
+          <Select
+            allowClear
+            loading={usersQuery.isLoading}
+            options={(usersQuery.data ?? []).map((user) => ({
+              value: user.id,
+              label: `${user.fullname} (${user.username})`,
+            }))}
+            placeholder="Select PIC user"
+          />
         </Form.Item>
 
         <Space>

@@ -6,6 +6,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Alert, Button, Card, Descriptions, Empty, Layout, Popconfirm, Space, Table, Typography, message } from "antd";
 import { signOut } from "next-auth/react";
 import {
+  type AccessMode,
+  type DepartmentResponse,
   deleteDepartment,
   deleteProject,
   getCurrentUser,
@@ -21,24 +23,27 @@ type ViewMode = "department" | "project";
 
 type HomeContentProps = {
   initialFullName: string;
-  initialRole: string;
+  initialAccessMode: AccessMode;
   viewMode: ViewMode;
   selectedDepartmentId?: number;
   selectedProjectId?: number;
 };
 
-function normalizeRole(rawRole: string | undefined) {
-  if (!rawRole) {
-    return "";
+function getAvailableViewModes(accessMode: AccessMode) {
+  if (accessMode === "ADMIN") {
+    return ["department", "project"] as const;
   }
 
-  const upper = rawRole.trim().toUpperCase();
-  return upper.startsWith("ROLE_") ? upper.slice(5) : upper;
+  if (accessMode === "PIC" || accessMode === "PM") {
+    return ["project"] as const;
+  }
+
+  return [] as const;
 }
 
 export function HomeContent({
   initialFullName,
-  initialRole,
+  initialAccessMode,
   viewMode,
   selectedDepartmentId: initialSelectedDepartmentId,
   selectedProjectId: initialSelectedProjectId,
@@ -82,7 +87,8 @@ export function HomeContent({
   });
 
   const fullName = currentUser?.fullname ?? initialFullName;
-  const role = normalizeRole(currentUser?.role ?? initialRole);
+  const accessMode = currentUser?.accessMode ?? initialAccessMode;
+  const availableViewModes = getAvailableViewModes(accessMode);
 
   const departments = useMemo(() => departmentsQuery.data ?? [], [departmentsQuery.data]);
   const projects = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
@@ -108,20 +114,34 @@ export function HomeContent({
     setSelectedProjectId(initialSelectedProjectId);
   }, [initialSelectedProjectId]);
 
+  useEffect(() => {
+    if (availableViewModes.length === 0) {
+      return;
+    }
+
+    if (!availableViewModes.some((mode) => mode === viewMode)) {
+      router.replace(availableViewModes[0] === "department" ? "/departments" : "/projects");
+    }
+  }, [availableViewModes, router, viewMode]);
+
   function canCreateDepartment() {
-    return role === "ADMIN";
+    return accessMode === "ADMIN";
   }
 
   function canCreateProject() {
-    return role === "DEPT_PIC";
+    return accessMode === "PIC";
   }
 
   function canEditDepartment() {
-    return role === "ADMIN";
+    return accessMode === "ADMIN";
   }
 
   function canEditProjectData() {
-    return role === "DEPT_PIC";
+    return accessMode === "PIC" || accessMode === "PM";
+  }
+
+  function canDeleteProjectData() {
+    return accessMode === "PIC";
   }
 
   function goToCreateRoute() {
@@ -140,7 +160,8 @@ export function HomeContent({
       return;
     }
 
-    const deptQuery = selectedDepartmentId ? `?deptId=${selectedDepartmentId}` : "";
+    const defaultDepartmentId = selectedDepartmentId ?? departments[0]?.partId;
+    const deptQuery = defaultDepartmentId ? `?deptId=${defaultDepartmentId}` : "";
     router.push(`/projects/create${deptQuery}`);
   }
 
@@ -190,6 +211,53 @@ export function HomeContent({
     );
   }
 
+  function renderDepartmentDetail(department: DepartmentResponse) {
+    return (
+      <Card className="shadow-sm">
+        <Typography.Title level={4} className="!mb-4">
+          Department Detail
+        </Typography.Title>
+        <Descriptions column={1} bordered>
+          <Descriptions.Item label="Part ID">{department.partId}</Descriptions.Item>
+          <Descriptions.Item label="Part Name">{department.partName}</Descriptions.Item>
+          <Descriptions.Item label="Department PIC User ID">
+            {department.departmentPicUserId ?? "Unassigned"}
+          </Descriptions.Item>
+          <Descriptions.Item label="Department PIC Username">
+            {department.departmentPicUsername ?? "Unassigned"}
+          </Descriptions.Item>
+          <Descriptions.Item label="Git PAT">{department.gitPat || "-"}</Descriptions.Item>
+          <Descriptions.Item label="Ecode PAT">{department.ecodePat || "-"}</Descriptions.Item>
+          <Descriptions.Item label="Gerrit Username">{department.gerritUserName || "-"}</Descriptions.Item>
+          <Descriptions.Item label="Gerrit HTTP Password">{department.gerritHttpPassword || "-"}</Descriptions.Item>
+          <Descriptions.Item label="Jira SEC PAT">{department.jiraSecPat || "-"}</Descriptions.Item>
+          <Descriptions.Item label="Jira MX PAT">{department.jiraMxPat || "-"}</Descriptions.Item>
+          <Descriptions.Item label="Jira LA PAT">{department.jiraLaPat || "-"}</Descriptions.Item>
+        </Descriptions>
+
+        {canEditDepartment() ? (
+          <div className="mt-6">
+            <Space wrap>
+              <Button onClick={() => router.push(`/departments/${department.partId}/edit`)}>
+                Edit Department
+              </Button>
+
+              <Popconfirm
+                title="Delete this department?"
+                description="This action cannot be undone."
+                okText="Delete"
+                okButtonProps={{ danger: true, loading: deleteDepartmentMutation.isPending }}
+                onConfirm={() => void deleteDepartmentMutation.mutateAsync(department.partId)}
+              >
+                <Button danger>Delete Department</Button>
+              </Popconfirm>
+            </Space>
+          </div>
+        ) : null}
+      </Card>
+    );
+  }
+
   const leftbarItems =
     viewMode === "project"
       ? projects.map((project) => ({
@@ -212,8 +280,9 @@ export function HomeContent({
     <Layout className="h-screen overflow-hidden bg-slate-100">
       <HomeHeader
         fullName={fullName}
-        role={role}
+        accessMode={accessMode}
         viewMode={viewMode}
+        availableViewModes={[...availableViewModes]}
         sidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
       />
@@ -253,61 +322,26 @@ export function HomeContent({
               {viewMode === "project" && selectedProject && canEditProjectData() ? (
                 <Card className="shadow-sm">
                   <Space wrap>
-                    <Button
-                      onClick={() => router.push(`/projects/${selectedProject.id}/edit`)}
-                    >
+                    <Button onClick={() => router.push(`/projects/${selectedProject.id}/edit`)}>
                       Edit Project Data
                     </Button>
 
-                    <Popconfirm
-                      title="Delete this project?"
-                      description="This action cannot be undone."
-                      okText="Delete"
-                      okButtonProps={{ danger: true, loading: deleteProjectMutation.isPending }}
-                      onConfirm={() => void deleteProjectMutation.mutateAsync(selectedProject.id)}
-                    >
-                      <Button danger>Delete Project</Button>
-                    </Popconfirm>
+                    {canDeleteProjectData() ? (
+                      <Popconfirm
+                        title="Delete this project?"
+                        description="This action cannot be undone."
+                        okText="Delete"
+                        okButtonProps={{ danger: true, loading: deleteProjectMutation.isPending }}
+                        onConfirm={() => void deleteProjectMutation.mutateAsync(selectedProject.id)}
+                      >
+                        <Button danger>Delete Project</Button>
+                      </Popconfirm>
+                    ) : null}
                   </Space>
                 </Card>
               ) : null}
 
-              {viewMode === "department" && selectedDepartment ? (
-                <Card className="shadow-sm">
-                  <Typography.Title level={4} className="!mb-4">
-                    Department Detail
-                  </Typography.Title>
-                  <Descriptions column={1} bordered>
-                    <Descriptions.Item label="Part ID">{selectedDepartment.partId}</Descriptions.Item>
-                    <Descriptions.Item label="Part Name">{selectedDepartment.partName}</Descriptions.Item>
-                    <Descriptions.Item label="Department PIC User ID">
-                      {selectedDepartment.departmentPicUserId ?? "Unassigned"}
-                    </Descriptions.Item>
-                  </Descriptions>
-
-                  {canEditDepartment() ? (
-                    <div className="mt-6">
-                      <Space wrap>
-                        <Button
-                          onClick={() => router.push(`/departments/${selectedDepartment.partId}/edit`)}
-                        >
-                          Edit Department
-                        </Button>
-
-                        <Popconfirm
-                          title="Delete this department?"
-                          description="This action cannot be undone."
-                          okText="Delete"
-                          okButtonProps={{ danger: true, loading: deleteDepartmentMutation.isPending }}
-                          onConfirm={() => void deleteDepartmentMutation.mutateAsync(selectedDepartment.partId)}
-                        >
-                          <Button danger>Delete Department</Button>
-                        </Popconfirm>
-                      </Space>
-                    </div>
-                  ) : null}
-                </Card>
-              ) : null}
+              {viewMode === "department" && selectedDepartment ? renderDepartmentDetail(selectedDepartment) : null}
 
               {((viewMode === "project" && !selectedProject) ||
                 (viewMode === "department" && !selectedDepartment)) ? (
@@ -356,6 +390,11 @@ export function HomeContent({
                               title: "Department PIC User ID",
                               dataIndex: "departmentPicUserId",
                               render: (value: number | null) => value ?? "Unassigned",
+                            },
+                            {
+                              title: "Department PIC Username",
+                              dataIndex: "departmentPicUsername",
+                              render: (value: string | null) => value ?? "Unassigned",
                             },
                             {
                               title: "Actions",
@@ -482,24 +521,26 @@ export function HomeContent({
                                     Edit
                                   </Button>
 
-                                  <Popconfirm
-                                    title="Delete this project?"
-                                    description="This action cannot be undone."
-                                    okText="Delete"
-                                    okButtonProps={{
-                                      danger: true,
-                                      loading: deleteProjectMutation.isPending,
-                                    }}
-                                    onConfirm={() => void deleteProjectMutation.mutateAsync(record.id)}
-                                  >
-                                    <Button
-                                      size="small"
-                                      danger
-                                      onClick={(event) => event.stopPropagation()}
+                                  {canDeleteProjectData() ? (
+                                    <Popconfirm
+                                      title="Delete this project?"
+                                      description="This action cannot be undone."
+                                      okText="Delete"
+                                      okButtonProps={{
+                                        danger: true,
+                                        loading: deleteProjectMutation.isPending,
+                                      }}
+                                      onConfirm={() => void deleteProjectMutation.mutateAsync(record.id)}
                                     >
-                                      Delete
-                                    </Button>
-                                  </Popconfirm>
+                                      <Button
+                                        size="small"
+                                        danger
+                                        onClick={(event) => event.stopPropagation()}
+                                      >
+                                        Delete
+                                      </Button>
+                                    </Popconfirm>
+                                  ) : null}
                                 </Space>
                               ) : null,
                             },

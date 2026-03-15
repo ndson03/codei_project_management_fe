@@ -22,7 +22,7 @@ export default async function DepartmentEditPage({ params }: RouteProps) {
   return (
     <AppShell
       initialFullName={session.user?.name ?? "Unknown User"}
-      initialRole={session.role ?? "N/A"}
+      initialAccessMode={session.role === "ROLE_ADMIN" ? "ADMIN" : "NONE"}
       viewMode="department"
     >
       <DepartmentEditForm partId={Number.isFinite(numericPartId) ? numericPartId : -1} />
