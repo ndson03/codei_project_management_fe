@@ -296,14 +296,6 @@ export function HomeContent({
                   <div className="mt-6">
                     <Space wrap>
                       <Button
-                        type="primary"
-                        disabled={!canCreateDepartment() && !canCreateProject()}
-                        onClick={goToCreateRoute}
-                      >
-                        {viewMode === "department" ? "Create Department / Project" : "Create Project"}
-                      </Button>
-
-                      <Button
                         disabled={!canEditDepartment()}
                         onClick={() => router.push(`/departments/${selectedDepartment.partId}/edit`)}
                       >
