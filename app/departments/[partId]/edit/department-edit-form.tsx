@@ -68,7 +68,7 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
         layout="vertical"
         initialValues={{
           partName: department.partName,
-          gitPat: "",
+          gitPat: department.gitPat,
           ecodePat: department.ecodePat,
           gerritUserName: department.gerritUserName,
           gerritHttpPassword: department.gerritHttpPassword,

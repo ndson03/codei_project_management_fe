@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Card, Form, Input, Select, Space, Typography, message } from "antd";
-import { createProject, getDepartments, getUsers, HttpError } from "@/lib/management-api";
+import { createProject, getCurrentUser, getDepartments, getUsers, HttpError } from "@/lib/management-api";
 
 function parseCsv(value: string) {
   return value
@@ -26,7 +27,12 @@ export function ProjectCreateForm() {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const deptIdFromQuery = searchParams.get("deptId");
-  const defaultDeptId = deptIdFromQuery ? Number(deptIdFromQuery) : undefined;
+  const requestedDeptId = deptIdFromQuery ? Number(deptIdFromQuery) : undefined;
+
+  const currentUserQuery = useQuery({
+    queryKey: ["current-user"],
+    queryFn: getCurrentUser,
+  });
 
   const departmentsQuery = useQuery({
     queryKey: ["departments"],
@@ -37,6 +43,24 @@ export function ProjectCreateForm() {
     queryKey: ["users"],
     queryFn: getUsers,
   });
+
+  const resolvedDeptId = useMemo(() => {
+    if (Number.isFinite(requestedDeptId)) {
+      return requestedDeptId;
+    }
+
+    const managedDepartmentId = currentUserQuery.data?.departmentPicPartIds?.[0];
+    if (Number.isFinite(managedDepartmentId)) {
+      return managedDepartmentId;
+    }
+
+    return departmentsQuery.data?.[0]?.partId;
+  }, [requestedDeptId, currentUserQuery.data?.departmentPicPartIds, departmentsQuery.data]);
+
+  const selectedDepartment = useMemo(
+    () => (departmentsQuery.data ?? []).find((department) => department.partId === resolvedDeptId),
+    [departmentsQuery.data, resolvedDeptId],
+  );
 
   const createProjectMutation = useMutation({
     mutationFn: createProject,
@@ -52,8 +76,14 @@ export function ProjectCreateForm() {
     <Card className="shadow-sm" title="Create Project">
       <Form
         layout="vertical"
-        initialValues={{ deptId: Number.isFinite(defaultDeptId) ? defaultDeptId : undefined }}
+        initialValues={{ deptId: resolvedDeptId }}
+        key={resolvedDeptId ?? "no-dept"}
         onFinish={(values) => {
+          if (!values.deptId) {
+            message.error("No managed department found for this account.");
+            return;
+          }
+
           createProjectMutation.mutate({
             deptId: values.deptId,
             projectName: values.projectName,
@@ -67,14 +97,20 @@ export function ProjectCreateForm() {
           });
         }}
       >
-        <Form.Item name="deptId" label="Department" rules={[{ required: true }]}>
-          <Select
-            loading={departmentsQuery.isLoading}
-            options={(departmentsQuery.data ?? []).map((department) => ({
-              value: department.partId,
-              label: `${department.partName} (#${department.partId})`,
-            }))}
-            placeholder="Select department"
+        <Form.Item name="deptId" hidden>
+          <Input type="hidden" />
+        </Form.Item>
+
+        <Form.Item label="Department">
+          <Input
+            readOnly
+            value={
+              selectedDepartment
+                ? `${selectedDepartment.partName} (#${selectedDepartment.partId})`
+                : departmentsQuery.isLoading
+                  ? "Loading..."
+                  : "No department assigned"
+            }
           />
         </Form.Item>
         <Form.Item name="projectName" label="Project Name" rules={[{ required: true }]}>
@@ -112,7 +148,12 @@ export function ProjectCreateForm() {
         </Form.Item>
 
         <Space>
-          <Button type="primary" htmlType="submit" loading={createProjectMutation.isPending}>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={createProjectMutation.isPending}
+            disabled={!resolvedDeptId}
+          >
             Submit
           </Button>
           <Link href="/projects">
@@ -120,6 +161,15 @@ export function ProjectCreateForm() {
           </Link>
         </Space>
       </Form>
+
+      {!resolvedDeptId ? (
+        <Alert
+          className="!mt-3"
+          type="warning"
+          showIcon
+          message="No managed department found for this account."
+        />
+      ) : null}
 
       {createProjectMutation.error ? (
         <Alert
