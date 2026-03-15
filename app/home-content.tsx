@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Card, Descriptions, Empty, Layout, Popconfirm, Space, Table, Typography, message } from "antd";
@@ -58,6 +58,7 @@ export function HomeContent({
 }: HomeContentProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const mainScrollRef = useRef<HTMLDivElement | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | undefined>(initialSelectedDepartmentId);
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(initialSelectedProjectId);
@@ -312,7 +313,7 @@ export function HomeContent({
       ? projects.map((project) => ({
           key: project.id,
           title: project.projectName,
-          subtitle: `Branch: ${project.branch || "-"}`,
+          subtitle: project.pics.length ? `PICs: ${project.pics.join(", ")}` : "PICs: -",
         }))
       : departments.map((department) => ({
           key: department.partId,
@@ -356,7 +357,7 @@ export function HomeContent({
             )}
           </aside>
 
-          <main className="h-full min-w-0 flex-1 overflow-y-auto p-6">
+          <main ref={mainScrollRef} className="h-full min-w-0 flex-1 overflow-y-auto p-6">
             <Space direction="vertical" className="w-full" size="middle">
               {isProfileLoading ? <Alert type="info" showIcon message="Loading profile..." /> : null}
               {currentUserError instanceof HttpError ? (
@@ -399,6 +400,10 @@ export function HomeContent({
                           rowKey="partId"
                           size="small"
                           pagination={false}
+                          sticky={{
+                            offsetHeader: 0,
+                            getContainer: () => mainScrollRef.current ?? document.body,
+                          }}
                           dataSource={departments}
                           scroll={{ x: 2000 }}
                           onRow={(record) => ({
@@ -471,6 +476,10 @@ export function HomeContent({
                           rowKey="id"
                           size="small"
                           pagination={false}
+                          sticky={{
+                            offsetHeader: 0,
+                            getContainer: () => mainScrollRef.current ?? document.body,
+                          }}
                           dataSource={projects}
                           onRow={(record) => ({
                             onClick: () => handleLeftbarSelect(record.id),
