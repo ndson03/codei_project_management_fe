@@ -317,7 +317,7 @@ export function HomeContent({
       <Layout.Content className="!h-full !p-0 overflow-hidden">
         <div className="flex h-full overflow-hidden">
           <aside
-            className={`h-full overflow-y-auto border-r border-slate-200 bg-white transition-all duration-200 ${
+            className={`h-full overflow-hidden border-r border-slate-200 bg-white transition-all duration-200 ${
               isSidebarCollapsed ? "w-0 border-r-0 p-0" : "w-80 p-3"
             }`}
           >
@@ -329,6 +329,7 @@ export function HomeContent({
                 onSelect={handleLeftbarSelect}
                 emptyText={viewMode === "project" ? "No projects found" : "No departments found"}
                 onCreate={viewMode === "project" ? (canCreateProject() ? goToCreateRoute : undefined) : (canCreateDepartment() ? goToCreateRoute : undefined)}
+                scrollStorageKey={viewMode === "project" ? "leftbar-scroll-project" : "leftbar-scroll-department"}
               />
             )}
           </aside>
@@ -463,44 +464,6 @@ export function HomeContent({
                               width: 200,
                               render: (value: string) => value || "-",
                             },
-                            {
-                              title: "Actions",
-                              key: "actions",
-                              width: 220,
-                              fixed: "right",
-                              render: (_, record) => canEditDepartment() ? (
-                                <Space onClick={(event) => event.stopPropagation()}>
-                                  <Button
-                                    size="small"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      router.push(`/departments/${record.partId}/edit`);
-                                    }}
-                                  >
-                                    Edit
-                                  </Button>
-
-                                  <Popconfirm
-                                    title="Delete this department?"
-                                    description="This action cannot be undone."
-                                    okText="Delete"
-                                    okButtonProps={{
-                                      danger: true,
-                                      loading: deleteDepartmentMutation.isPending,
-                                    }}
-                                    onConfirm={() => deleteDepartmentMutation.mutate(record.partId)}
-                                  >
-                                    <Button
-                                      size="small"
-                                      danger
-                                      onClick={(event) => event.stopPropagation()}
-                                    >
-                                      Delete
-                                    </Button>
-                                  </Popconfirm>
-                                </Space>
-                              ) : null,
-                            },
                           ]}
                         />
                       ) : (
@@ -565,46 +528,6 @@ export function HomeContent({
                               dataIndex: "devWhiteList",
                               width: 220,
                               render: (value: string[]) => (value.length ? value.join(", ") : "-"),
-                            },
-                            {
-                              title: "Actions",
-                              key: "actions",
-                              width: 220,
-                              fixed: "right",
-                              render: (_, record) => canEditProjectData() ? (
-                                <Space onClick={(event) => event.stopPropagation()}>
-                                  <Button
-                                    size="small"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      router.push(`/projects/${record.id}/edit`);
-                                    }}
-                                  >
-                                    Edit
-                                  </Button>
-
-                                  {canDeleteProjectData() ? (
-                                    <Popconfirm
-                                      title="Delete this project?"
-                                      description="This action cannot be undone."
-                                      okText="Delete"
-                                      okButtonProps={{
-                                        danger: true,
-                                        loading: deleteProjectMutation.isPending,
-                                      }}
-                                      onConfirm={() => deleteProjectMutation.mutate(record.id)}
-                                    >
-                                      <Button
-                                        size="small"
-                                        danger
-                                        onClick={(event) => event.stopPropagation()}
-                                      >
-                                        Delete
-                                      </Button>
-                                    </Popconfirm>
-                                  ) : null}
-                                </Space>
-                              ) : null,
                             },
                           ]}
                         />
