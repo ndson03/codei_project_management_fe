@@ -23,7 +23,11 @@ function getAvailableViewModes(accessMode: AccessMode) {
     return ["department", "project"] as const;
   }
 
-  if (accessMode === "PIC" || accessMode === "PM") {
+  if (accessMode === "PIC") {
+    return ["department", "project"] as const;
+  }
+
+  if (accessMode === "PM") {
     return ["project"] as const;
   }
 

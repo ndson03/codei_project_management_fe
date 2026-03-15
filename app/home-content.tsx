@@ -34,7 +34,11 @@ function getAvailableViewModes(accessMode: AccessMode) {
     return ["department", "project"] as const;
   }
 
-  if (accessMode === "PIC" || accessMode === "PM") {
+  if (accessMode === "PIC") {
+    return ["department", "project"] as const;
+  }
+
+  if (accessMode === "PM") {
     return ["project"] as const;
   }
 
@@ -166,7 +170,11 @@ export function HomeContent({
     return accessMode === "PIC";
   }
 
-  function canEditDepartment() {
+  function canUpdateDepartment() {
+    return accessMode === "ADMIN" || accessMode === "PIC";
+  }
+
+  function canDeleteDepartment() {
     return accessMode === "ADMIN";
   }
 
@@ -285,22 +293,24 @@ export function HomeContent({
           <Descriptions.Item label="Jira LA PAT">{department.jiraLaPat || "-"}</Descriptions.Item>
         </Descriptions>
 
-        {canEditDepartment() ? (
+        {canUpdateDepartment() ? (
           <div className="mt-6">
             <Space wrap>
               <Button onClick={() => router.push(`/departments/${department.partId}/edit`)}>
                 Edit Department
               </Button>
 
-              <Popconfirm
-                title="Delete this department?"
-                description="This action cannot be undone."
-                okText="Delete"
-                okButtonProps={{ danger: true, loading: deleteDepartmentMutation.isPending }}
-                onConfirm={() => deleteDepartmentMutation.mutate(department.partId)}
-              >
-                <Button danger>Delete Department</Button>
-              </Popconfirm>
+              {canDeleteDepartment() ? (
+                <Popconfirm
+                  title="Delete this department?"
+                  description="This action cannot be undone."
+                  okText="Delete"
+                  okButtonProps={{ danger: true, loading: deleteDepartmentMutation.isPending }}
+                  onConfirm={() => deleteDepartmentMutation.mutate(department.partId)}
+                >
+                  <Button danger>Delete Department</Button>
+                </Popconfirm>
+              ) : null}
             </Space>
           </div>
         ) : null}

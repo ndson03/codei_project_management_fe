@@ -187,7 +187,7 @@ export function createProject(payload: CreateProjectRequest) {
 }
 
 export function updateDepartment(payload: UpdateDepartmentRequest) {
-  return requestJson<DepartmentResponse>(`/api/admin/departments/${payload.deptId}`, {
+  return requestJson<DepartmentResponse>(`/api/departments/${payload.deptId}`, {
     method: "PUT",
     body: JSON.stringify({
       partName: payload.partName,

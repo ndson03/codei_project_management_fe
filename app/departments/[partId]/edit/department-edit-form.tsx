@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Card, Empty, Form, Input, Select, Space, Typography, message } from "antd";
-import { getDepartments, getUsers, HttpError, updateDepartment } from "@/lib/management-api";
+import { getCurrentUser, getDepartments, getUsers, HttpError, updateDepartment } from "@/lib/management-api";
 
 type DepartmentEditFormProps = {
   partId: number;
@@ -29,9 +29,17 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
     queryFn: getDepartments,
   });
 
-  const usersQuery = useQuery({
+  const currentUserQuery = useQuery({
+    queryKey: ["current-user"],
+    queryFn: getCurrentUser,
+  });
+
+  const isAdmin = currentUserQuery.data?.accessMode === "ADMIN";
+
+  const picUsersQuery = useQuery({
     queryKey: ["users", "assignment", "PIC", partId],
     queryFn: () => getUsers({ assignmentType: "PIC", deptId: partId }),
+    enabled: isAdmin,
   });
 
   const department = useMemo(
@@ -88,7 +96,7 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
             jiraSecPat: values.jiraSecPat,
             jiraMxPat: values.jiraMxPat,
             jiraLaPat: values.jiraLaPat,
-            departmentPicUsername: values.departmentPicUsername,
+            ...(isAdmin ? { departmentPicUsername: values.departmentPicUsername } : {}),
           });
         }}
       >
@@ -116,19 +124,21 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
         <Form.Item name="jiraLaPat" label="Jira LA PAT" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
-        <Form.Item name="departmentPicUsername" label="Department PIC User">
-          <Select
-            allowClear
-            showSearch
-            optionFilterProp="label"
-            loading={usersQuery.isLoading}
-            options={(usersQuery.data ?? []).map((user) => ({
-              value: user.username,
-              label: `${user.fullname} (${user.username})`,
-            }))}
-            placeholder="Search and select PIC user"
-          />
-        </Form.Item>
+        {isAdmin ? (
+          <Form.Item name="departmentPicUsername" label="Department PIC User">
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              loading={picUsersQuery.isLoading}
+              options={(picUsersQuery.data ?? []).map((user) => ({
+                value: user.username,
+                label: `${user.fullname} (${user.username})`,
+              }))}
+              placeholder="Search and select PIC user"
+            />
+          </Form.Item>
+        ) : null}
 
         <Space>
           <Button type="primary" htmlType="submit" loading={updateMutation.isPending}>

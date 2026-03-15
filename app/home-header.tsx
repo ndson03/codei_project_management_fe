@@ -19,13 +19,13 @@ export function HomeHeader({
   fullName,
   accessMode,
   viewMode,
-  availableViewModes,
+  availableViewModes: _availableViewModes,
   sidebarCollapsed,
   onToggleSidebar,
 }: HomeHeaderProps) {
   const router = useRouter();
 
-  const tabItems = availableViewModes.map((mode) => ({
+  const tabItems = (["department", "project"] as const).map((mode) => ({
     key: mode,
     label: <span className="text-base font-semibold">{mode === "department" ? "Department" : "Project"}</span>,
   }));
@@ -60,18 +60,16 @@ export function HomeHeader({
             Codei Project Management
           </Typography.Title>
 
-          {tabItems.length > 0 ? (
-            <Tabs
-              size="small"
-              className="!mb-0"
-              tabBarStyle={{ margin: 0 }}
-              activeKey={viewMode}
-              onChange={(key) => {
-                router.push(key === "department" ? "/departments" : "/projects");
-              }}
-              items={tabItems}
-            />
-          ) : null}
+          <Tabs
+            size="small"
+            className="!mb-0"
+            tabBarStyle={{ margin: 0 }}
+            activeKey={viewMode}
+            onChange={(key) => {
+              router.push(key === "department" ? "/departments" : "/projects");
+            }}
+            items={tabItems}
+          />
         </div>
 
         <Space size="middle" align="center" wrap>
