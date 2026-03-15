@@ -55,7 +55,6 @@ export type CreateProjectRequest = {
   repositories: string[];
   pics: string[];
   devWhiteList: string[];
-  pmUsernames: string[];
 };
 
 export type UpdateDepartmentRequest = {
@@ -81,7 +80,6 @@ export type ProjectResponse = {
   repositories: string[];
   pics: string[];
   devWhiteList: string[];
-  pmUsernames: string[];
 };
 
 export class HttpError extends Error {
@@ -184,7 +182,6 @@ export function createProject(payload: CreateProjectRequest) {
       repositories: payload.repositories,
       pics: payload.pics,
       devWhiteList: payload.devWhiteList,
-      pmUsernames: payload.pmUsernames,
     }),
   });
 }
@@ -234,7 +231,6 @@ export function updateProjectData(payload: CreateProjectRequest & { projectId: n
       repositories: payload.repositories,
       pics: payload.pics,
       devWhiteList: payload.devWhiteList,
-      pmUsernames: payload.pmUsernames,
     }),
   });
 }

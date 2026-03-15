@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Card, Empty, Form, Input, Select, Space, Typography, message } from "antd";
-import { getCurrentUser, getProjects, getUsers, HttpError, updateProjectData } from "@/lib/management-api";
+import { getProjects, getUsers, HttpError, updateProjectData } from "@/lib/management-api";
 
 type ProjectEditFormProps = {
   projectId: number;
@@ -36,11 +36,6 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
     queryFn: getProjects,
   });
 
-  const currentUserQuery = useQuery({
-    queryKey: ["current-user"],
-    queryFn: getCurrentUser,
-  });
-
   const project = useMemo(
     () => (projectsQuery.data ?? []).find((item) => item.id === projectId),
     [projectsQuery.data, projectId],
@@ -56,12 +51,10 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
     },
   });
 
-  const canManagePmAssignments = currentUserQuery.data?.accessMode === "PIC";
-
   const usersQuery = useQuery({
-    queryKey: ["users", "assignment", "PM", project?.departmentId],
+    queryKey: ["users", "by-dept", project?.departmentId],
     queryFn: () => getUsers({ assignmentType: "PM", deptId: project?.departmentId }),
-    enabled: canManagePmAssignments && project?.departmentId != null,
+    enabled: project?.departmentId != null,
   });
 
   if (projectsQuery.isLoading) {
@@ -88,9 +81,8 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
           notes: project.notes,
           taskManagements: project.taskManagements.join(", "),
           repositories: project.repositories.join(", "),
-          pics: project.pics.join(", "),
-          devWhiteList: project.devWhiteList.join(", "),
-          pmUsernames: project.pmUsernames,
+          pics: project.pics,
+          devWhiteList: project.devWhiteList,
         }}
         onFinish={(values) => {
           updateMutation.mutate({
@@ -101,9 +93,8 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
             notes: values.notes,
             taskManagements: parseCsv(values.taskManagements || ""),
             repositories: parseCsv(values.repositories || ""),
-            pics: parseCsv(values.pics || ""),
-            devWhiteList: parseCsv(values.devWhiteList || ""),
-            pmUsernames: canManagePmAssignments ? values.pmUsernames || [] : project.pmUsernames,
+            pics: values.pics || [],
+            devWhiteList: values.devWhiteList || [],
           });
         }}
       >
@@ -128,28 +119,34 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
         <Form.Item name="repositories" label="Repositories (comma separated)">
           <Input />
         </Form.Item>
-        <Form.Item name="pics" label="PICs (comma separated)">
-          <Input />
+        <Form.Item name="pics" label="PICs (PM Usernames)">
+          <Select
+            mode="multiple"
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            loading={usersQuery.isLoading}
+            options={(usersQuery.data ?? []).map((user) => ({
+              value: user.username,
+              label: `${user.fullname} (${user.username})`,
+            }))}
+            placeholder="Search and select PIC/PM usernames"
+          />
         </Form.Item>
-        <Form.Item name="devWhiteList" label="Dev White List (comma separated)">
-          <Input />
+        <Form.Item name="devWhiteList" label="Dev White List (Usernames)">
+          <Select
+            mode="multiple"
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            loading={usersQuery.isLoading}
+            options={(usersQuery.data ?? []).map((user) => ({
+              value: user.username,
+              label: `${user.fullname} (${user.username})`,
+            }))}
+            placeholder="Search and select usernames"
+          />
         </Form.Item>
-        {canManagePmAssignments ? (
-          <Form.Item name="pmUsernames" label="PM Users">
-            <Select
-              mode="multiple"
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              loading={usersQuery.isLoading}
-              options={(usersQuery.data ?? []).map((user) => ({
-                value: user.username,
-                label: `${user.fullname} (${user.username})`,
-              }))}
-              placeholder="Search and select PM users"
-            />
-          </Form.Item>
-        ) : null}
 
         <Space>
           <Button type="primary" htmlType="submit" loading={updateMutation.isPending}>

@@ -58,7 +58,7 @@ export function ProjectCreateForm() {
   );
 
   const usersQuery = useQuery({
-    queryKey: ["users", "assignment", "PM", resolvedDeptId],
+    queryKey: ["users", "by-dept", resolvedDeptId],
     queryFn: () => getUsers({ assignmentType: "PM", deptId: resolvedDeptId }),
     enabled: Number.isFinite(resolvedDeptId),
   });
@@ -92,9 +92,8 @@ export function ProjectCreateForm() {
             notes: values.notes,
             taskManagements: parseCsv(values.taskManagements || ""),
             repositories: parseCsv(values.repositories || ""),
-            pics: parseCsv(values.pics || ""),
-            devWhiteList: parseCsv(values.devWhiteList || ""),
-            pmUsernames: values.pmUsernames || [],
+            pics: values.pics || [],
+            devWhiteList: values.devWhiteList || [],
           });
         }}
       >
@@ -129,13 +128,7 @@ export function ProjectCreateForm() {
         <Form.Item name="repositories" label="Repositories (comma separated)">
           <Input placeholder="repo-a, repo-b" />
         </Form.Item>
-        <Form.Item name="pics" label="PICs (comma separated)">
-          <Input placeholder="alice" />
-        </Form.Item>
-        <Form.Item name="devWhiteList" label="Dev White List (comma separated)">
-          <Input placeholder="dev01, dev02" />
-        </Form.Item>
-        <Form.Item name="pmUsernames" label="PM Users">
+        <Form.Item name="pics" label="PICs (PM Usernames)">
           <Select
             mode="multiple"
             allowClear
@@ -146,7 +139,21 @@ export function ProjectCreateForm() {
               value: user.username,
               label: `${user.fullname} (${user.username})`,
             }))}
-            placeholder="Search and select PM users"
+            placeholder="Search and select PIC/PM usernames"
+          />
+        </Form.Item>
+        <Form.Item name="devWhiteList" label="Dev White List (Usernames)">
+          <Select
+            mode="multiple"
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            loading={usersQuery.isLoading}
+            options={(usersQuery.data ?? []).map((user) => ({
+              value: user.username,
+              label: `${user.fullname} (${user.username})`,
+            }))}
+            placeholder="Search and select usernames"
           />
         </Form.Item>
 

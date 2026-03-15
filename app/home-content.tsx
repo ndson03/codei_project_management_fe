@@ -236,9 +236,6 @@ export function HomeContent({
             <Descriptions.Item label="Dev White List">
               {project.devWhiteList.length ? project.devWhiteList.join(", ") : "-"}
             </Descriptions.Item>
-          <Descriptions.Item label="PM Usernames">
-            {project.pmUsernames.length ? project.pmUsernames.join(", ") : "-"}
-          </Descriptions.Item>
         </Descriptions>
       </Card>
     );
@@ -567,12 +564,6 @@ export function HomeContent({
                               title: "Dev White List",
                               dataIndex: "devWhiteList",
                               width: 220,
-                              render: (value: string[]) => (value.length ? value.join(", ") : "-"),
-                            },
-                            {
-                              title: "PM Usernames",
-                              dataIndex: "pmUsernames",
-                              width: 180,
                               render: (value: string[]) => (value.length ? value.join(", ") : "-"),
                             },
                             {
