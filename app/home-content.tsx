@@ -16,6 +16,7 @@ import {
   type ProjectResponse,
   HttpError,
 } from "@/lib/management-api";
+import { TABLE_PAGE_SIZE_DEFAULT, TABLE_PAGE_SIZE_OPTIONS } from "@/lib/table-pagination";
 import { CommonLeftbar } from "./common-leftbar";
 import { HomeHeader } from "./home-header";
 
@@ -66,6 +67,8 @@ export function HomeContent({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | undefined>(initialSelectedDepartmentId);
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(initialSelectedProjectId);
+  const [departmentPagination, setDepartmentPagination] = useState({ current: 1, pageSize: TABLE_PAGE_SIZE_DEFAULT });
+  const [projectPagination, setProjectPagination] = useState({ current: 1, pageSize: TABLE_PAGE_SIZE_DEFAULT });
 
   const { data: currentUser, error: currentUserError, isLoading: isProfileLoading } = useQuery({
     queryKey: ["current-user"],
@@ -415,12 +418,24 @@ export function HomeContent({
                         <Table
                           rowKey="partId"
                           size="small"
-                          pagination={false}
+                          pagination={{
+                            current: departmentPagination.current,
+                            pageSize: departmentPagination.pageSize,
+                            total: departments.length,
+                            showSizeChanger: true,
+                            pageSizeOptions: [...TABLE_PAGE_SIZE_OPTIONS],
+                          }}
                           sticky={{
                             offsetHeader: 0,
                             getContainer: () => mainScrollRef.current ?? document.body,
                           }}
                           dataSource={departments}
+                          onChange={(pagination) => {
+                            setDepartmentPagination({
+                              current: pagination.current ?? 1,
+                              pageSize: pagination.pageSize ?? TABLE_PAGE_SIZE_DEFAULT,
+                            });
+                          }}
                           scroll={{ x: 2000 }}
                           onRow={(record) => ({
                             onClick: () => handleLeftbarSelect(record.partId),
@@ -491,12 +506,24 @@ export function HomeContent({
                         <Table
                           rowKey="id"
                           size="small"
-                          pagination={false}
+                          pagination={{
+                            current: projectPagination.current,
+                            pageSize: projectPagination.pageSize,
+                            total: projects.length,
+                            showSizeChanger: true,
+                            pageSizeOptions: [...TABLE_PAGE_SIZE_OPTIONS],
+                          }}
                           sticky={{
                             offsetHeader: 0,
                             getContainer: () => mainScrollRef.current ?? document.body,
                           }}
                           dataSource={projects}
+                          onChange={(pagination) => {
+                            setProjectPagination({
+                              current: pagination.current ?? 1,
+                              pageSize: pagination.pageSize ?? TABLE_PAGE_SIZE_DEFAULT,
+                            });
+                          }}
                           onRow={(record) => ({
                             onClick: () => handleLeftbarSelect(record.id),
                             className: "cursor-pointer",

@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Alert, Card, Table, Typography } from "antd";
 import { getStatisticResults, HttpError } from "@/lib/management-api";
+import { TABLE_PAGE_SIZE_DEFAULT, TABLE_PAGE_SIZE_OPTIONS } from "@/lib/table-pagination";
 
 function renderError(error: unknown) {
   if (error instanceof HttpError) {
@@ -12,6 +14,8 @@ function renderError(error: unknown) {
 }
 
 export function StatisticsContent() {
+  const [pagination, setPagination] = useState({ current: 1, pageSize: TABLE_PAGE_SIZE_DEFAULT });
+
   const statisticsQuery = useQuery({
     queryKey: ["statistics"],
     queryFn: getStatisticResults,
@@ -27,8 +31,20 @@ export function StatisticsContent() {
       <Table
         rowKey={(record) => `${record.issueKey ?? ""}:${record.prNumber ?? ""}`}
         size="small"
-        pagination={{ pageSize: 20 }}
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: statisticsQuery.data?.length ?? 0,
+          showSizeChanger: true,
+          pageSizeOptions: [...TABLE_PAGE_SIZE_OPTIONS],
+        }}
         dataSource={statisticsQuery.data ?? []}
+        onChange={(nextPagination) => {
+          setPagination({
+            current: nextPagination.current ?? 1,
+            pageSize: nextPagination.pageSize ?? TABLE_PAGE_SIZE_DEFAULT,
+          });
+        }}
         scroll={{ x: 2000 }}
         columns={[
           { title: "Issue Key", dataIndex: "issueKey", width: 140, render: (value: string | null) => value ?? "-" },
