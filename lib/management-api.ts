@@ -18,7 +18,6 @@ export type UserResponse = {
 };
 
 export type CreateDepartmentRequest = {
-  partId: number;
   partName: string;
   gitPat: string;
   ecodePat: string;

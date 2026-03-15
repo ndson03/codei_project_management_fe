@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Card, Form, Input, InputNumber, Select, Space, Typography, message } from "antd";
+import { Alert, Button, Card, Form, Input, Select, Space, Typography, message } from "antd";
 import { createDepartment, getUsers, HttpError } from "@/lib/management-api";
 
 function renderMutationError(mutationError: unknown) {
@@ -39,7 +39,6 @@ export function DepartmentCreateForm() {
         layout="vertical"
         onFinish={(values) => {
           createDepartmentMutation.mutate({
-            partId: values.partId,
             partName: values.partName,
             gitPat: values.gitPat,
             ecodePat: values.ecodePat,
@@ -52,9 +51,6 @@ export function DepartmentCreateForm() {
           });
         }}
       >
-        <Form.Item name="partId" label="Part ID" rules={[{ required: true }]}>
-          <InputNumber className="!w-full" />
-        </Form.Item>
         <Form.Item name="partName" label="Part Name" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
