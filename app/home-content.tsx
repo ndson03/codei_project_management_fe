@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Card, Descriptions, Empty, Layout, Popconfirm, Space, Table, Typography, message } from "antd";
 import { signOut } from "next-auth/react";
 import {
@@ -41,6 +41,14 @@ function getAvailableViewModes(accessMode: AccessMode) {
   return [] as const;
 }
 
+function getHttpErrorMessage(error: unknown) {
+  if (!(error instanceof HttpError)) {
+    return "Unexpected error";
+  }
+
+  return `${error.status}: ${error.message}`;
+}
+
 export function HomeContent({
   initialFullName,
   initialAccessMode,
@@ -49,6 +57,7 @@ export function HomeContent({
   selectedProjectId: initialSelectedProjectId,
 }: HomeContentProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | undefined>(initialSelectedDepartmentId);
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(initialSelectedProjectId);
@@ -70,19 +79,43 @@ export function HomeContent({
 
   const deleteDepartmentMutation = useMutation({
     mutationFn: deleteDepartment,
-    onSuccess: () => {
+    onSuccess: async (_, deletedDeptId) => {
+      queryClient.setQueryData<DepartmentResponse[]>(["departments"], (previous) =>
+        (previous ?? []).filter((department) => department.partId !== deletedDeptId),
+      );
+
+      if (selectedDepartmentId === deletedDeptId) {
+        setSelectedDepartmentId(undefined);
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["departments"] });
       message.success("Department deleted");
-      void departmentsQuery.refetch();
       router.push("/departments");
+      router.refresh();
+    },
+    onError: (error) => {
+      message.error(`Delete department failed: ${getHttpErrorMessage(error)}`);
     },
   });
 
   const deleteProjectMutation = useMutation({
     mutationFn: deleteProject,
-    onSuccess: () => {
+    onSuccess: async (_, deletedProjectId) => {
+      queryClient.setQueryData<ProjectResponse[]>(["projects"], (previous) =>
+        (previous ?? []).filter((project) => project.id !== deletedProjectId),
+      );
+
+      if (selectedProjectId === deletedProjectId) {
+        setSelectedProjectId(undefined);
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["projects"] });
       message.success("Project deleted");
-      void projectsQuery.refetch();
       router.push("/projects");
+      router.refresh();
+    },
+    onError: (error) => {
+      message.error(`Delete project failed: ${getHttpErrorMessage(error)}`);
     },
   });
 
@@ -247,7 +280,7 @@ export function HomeContent({
                 description="This action cannot be undone."
                 okText="Delete"
                 okButtonProps={{ danger: true, loading: deleteDepartmentMutation.isPending }}
-                onConfirm={() => void deleteDepartmentMutation.mutateAsync(department.partId)}
+                onConfirm={() => deleteDepartmentMutation.mutate(department.partId)}
               >
                 <Button danger>Delete Department</Button>
               </Popconfirm>
@@ -332,7 +365,7 @@ export function HomeContent({
                         description="This action cannot be undone."
                         okText="Delete"
                         okButtonProps={{ danger: true, loading: deleteProjectMutation.isPending }}
-                        onConfirm={() => void deleteProjectMutation.mutateAsync(selectedProject.id)}
+                        onConfirm={() => deleteProjectMutation.mutate(selectedProject.id)}
                       >
                         <Button danger>Delete Project</Button>
                       </Popconfirm>
@@ -448,7 +481,7 @@ export function HomeContent({
                               width: 220,
                               fixed: "right",
                               render: (_, record) => canEditDepartment() ? (
-                                <Space>
+                                <Space onClick={(event) => event.stopPropagation()}>
                                   <Button
                                     size="small"
                                     onClick={(event) => {
@@ -467,7 +500,7 @@ export function HomeContent({
                                       danger: true,
                                       loading: deleteDepartmentMutation.isPending,
                                     }}
-                                    onConfirm={() => void deleteDepartmentMutation.mutateAsync(record.partId)}
+                                    onConfirm={() => deleteDepartmentMutation.mutate(record.partId)}
                                   >
                                     <Button
                                       size="small"
@@ -557,7 +590,7 @@ export function HomeContent({
                               width: 220,
                               fixed: "right",
                               render: (_, record) => canEditProjectData() ? (
-                                <Space>
+                                <Space onClick={(event) => event.stopPropagation()}>
                                   <Button
                                     size="small"
                                     onClick={(event) => {
@@ -577,7 +610,7 @@ export function HomeContent({
                                         danger: true,
                                         loading: deleteProjectMutation.isPending,
                                       }}
-                                      onConfirm={() => void deleteProjectMutation.mutateAsync(record.id)}
+                                      onConfirm={() => deleteProjectMutation.mutate(record.id)}
                                     >
                                       <Button
                                         size="small"

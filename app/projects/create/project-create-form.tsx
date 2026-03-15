@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Card, Form, Input, Select, Space, Typography, message } from "antd";
 import { createProject, getDepartments, getUsers, HttpError } from "@/lib/management-api";
 
@@ -22,6 +22,8 @@ function renderMutationError(mutationError: unknown) {
 }
 
 export function ProjectCreateForm() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const deptIdFromQuery = searchParams.get("deptId");
   const defaultDeptId = deptIdFromQuery ? Number(deptIdFromQuery) : undefined;
@@ -38,8 +40,11 @@ export function ProjectCreateForm() {
 
   const createProjectMutation = useMutation({
     mutationFn: createProject,
-    onSuccess: () => {
+    onSuccess: async (createdProject) => {
+      await queryClient.invalidateQueries({ queryKey: ["projects"] });
       message.success("Create project success");
+      router.replace(`/projects/${createdProject.id}`);
+      router.refresh();
     },
   });
 

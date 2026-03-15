@@ -10,14 +10,24 @@ export async function proxyBackendRequest(path: string, method: "GET" | "POST" |
       body: bodyText || undefined,
     });
 
-    const contentType = response.headers.get("content-type") || "application/json";
+    const contentType = response.headers.get("content-type");
     const payload = await response.text();
+
+    const headers = new Headers();
+    if (contentType && payload) {
+      headers.set("content-type", contentType);
+    }
+
+    if (!payload || response.status === 204 || response.status === 205 || response.status === 304) {
+      return new NextResponse(null, {
+        status: response.status,
+        headers,
+      });
+    }
 
     return new NextResponse(payload, {
       status: response.status,
-      headers: {
-        "content-type": contentType,
-      },
+      headers,
     });
   } catch (error) {
     if (error instanceof ApiAuthError) {

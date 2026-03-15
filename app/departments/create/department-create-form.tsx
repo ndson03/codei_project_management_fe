@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Card, Form, Input, InputNumber, Select, Space, Typography, message } from "antd";
 import { createDepartment, getUsers, HttpError } from "@/lib/management-api";
 
@@ -14,6 +15,9 @@ function renderMutationError(mutationError: unknown) {
 }
 
 export function DepartmentCreateForm() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
   const usersQuery = useQuery({
     queryKey: ["users"],
     queryFn: getUsers,
@@ -21,8 +25,11 @@ export function DepartmentCreateForm() {
 
   const createDepartmentMutation = useMutation({
     mutationFn: createDepartment,
-    onSuccess: () => {
+    onSuccess: async (createdDepartment) => {
+      await queryClient.invalidateQueries({ queryKey: ["departments"] });
       message.success("Create department success");
+      router.replace(`/departments/${createdDepartment.partId}`);
+      router.refresh();
     },
   });
 

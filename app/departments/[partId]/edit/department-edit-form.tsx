@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Card, Empty, Form, Input, Select, Space, Typography, message } from "antd";
 import { getDepartments, getUsers, HttpError, updateDepartment } from "@/lib/management-api";
 
@@ -19,6 +20,8 @@ function renderMutationError(mutationError: unknown) {
 }
 
 export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [form] = Form.useForm();
 
   const departmentsQuery = useQuery({
@@ -38,8 +41,11 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
 
   const updateMutation = useMutation({
     mutationFn: updateDepartment,
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["departments"] });
       message.success("Department updated");
+      router.replace(`/departments/${partId}`);
+      router.refresh();
     },
   });
 

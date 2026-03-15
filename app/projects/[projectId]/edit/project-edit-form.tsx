@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Card, Empty, Form, Input, Select, Space, Typography, message } from "antd";
 import { getCurrentUser, getProjects, getUsers, HttpError, updateProjectData } from "@/lib/management-api";
 
@@ -26,6 +27,8 @@ function renderMutationError(mutationError: unknown) {
 }
 
 export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [form] = Form.useForm();
 
   const projectsQuery = useQuery({
@@ -50,8 +53,11 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
 
   const updateMutation = useMutation({
     mutationFn: updateProjectData,
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["projects"] });
       message.success("Project updated");
+      router.replace(`/projects/${projectId}`);
+      router.refresh();
     },
   });
 
