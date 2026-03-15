@@ -81,7 +81,6 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
           notes: project.notes,
           taskManagements: project.taskManagements.join(", "),
           repositories: project.repositories.join(", "),
-          pics: project.pics,
           devWhiteList: project.devWhiteList,
         }}
         onFinish={(values) => {
@@ -93,7 +92,7 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
             notes: values.notes,
             taskManagements: parseCsv(values.taskManagements || ""),
             repositories: parseCsv(values.repositories || ""),
-            pics: values.pics || [],
+            pics: project.pics,
             devWhiteList: values.devWhiteList || [],
           });
         }}
@@ -119,19 +118,8 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
         <Form.Item name="repositories" label="Repositories (comma separated)">
           <Input />
         </Form.Item>
-        <Form.Item name="pics" label="PICs (PM Usernames)">
-          <Select
-            mode="multiple"
-            allowClear
-            showSearch
-            optionFilterProp="label"
-            loading={usersQuery.isLoading}
-            options={(usersQuery.data ?? []).map((user) => ({
-              value: user.username,
-              label: `${user.fullname} (${user.username})`,
-            }))}
-            placeholder="Search and select PIC/PM usernames"
-          />
+        <Form.Item label="PICs (PM Usernames)">
+          <Input value={project.pics.length ? project.pics.join(", ") : "-"} readOnly />
         </Form.Item>
         <Form.Item name="devWhiteList" label="Dev White List (Usernames)">
           <Select

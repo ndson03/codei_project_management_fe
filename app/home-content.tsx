@@ -237,6 +237,28 @@ export function HomeContent({
               {project.devWhiteList.length ? project.devWhiteList.join(", ") : "-"}
             </Descriptions.Item>
         </Descriptions>
+
+        {canEditProjectData() ? (
+          <div className="mt-6">
+            <Space wrap>
+              <Button onClick={() => router.push(`/projects/${project.id}/edit`)}>
+                Edit Project Data
+              </Button>
+
+              {canDeleteProjectData() ? (
+                <Popconfirm
+                  title="Delete this project?"
+                  description="This action cannot be undone."
+                  okText="Delete"
+                  okButtonProps={{ danger: true, loading: deleteProjectMutation.isPending }}
+                  onConfirm={() => deleteProjectMutation.mutate(project.id)}
+                >
+                  <Button danger>Delete Project</Button>
+                </Popconfirm>
+              ) : null}
+            </Space>
+          </div>
+        ) : null}
       </Card>
     );
   }
@@ -346,28 +368,6 @@ export function HomeContent({
               ) : null}
 
               {viewMode === "project" && selectedProject ? renderProjectDetail(selectedProject) : null}
-
-              {viewMode === "project" && selectedProject && canEditProjectData() ? (
-                <Card className="shadow-sm">
-                  <Space wrap>
-                    <Button onClick={() => router.push(`/projects/${selectedProject.id}/edit`)}>
-                      Edit Project Data
-                    </Button>
-
-                    {canDeleteProjectData() ? (
-                      <Popconfirm
-                        title="Delete this project?"
-                        description="This action cannot be undone."
-                        okText="Delete"
-                        okButtonProps={{ danger: true, loading: deleteProjectMutation.isPending }}
-                        onConfirm={() => deleteProjectMutation.mutate(selectedProject.id)}
-                      >
-                        <Button danger>Delete Project</Button>
-                      </Popconfirm>
-                    ) : null}
-                  </Space>
-                </Card>
-              ) : null}
 
               {viewMode === "department" && selectedDepartment ? renderDepartmentDetail(selectedDepartment) : null}
 
