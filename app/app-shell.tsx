@@ -127,8 +127,7 @@ export function AppShell({ initialFullName, initialRole, viewMode, children }: A
                 items={leftbarItems}
                 onSelect={handleLeftbarSelect}
                 emptyText={viewMode === "project" ? "No projects found" : "No departments found"}
-                onCreate={goToCreateRoute}
-                disableCreate={viewMode === "project" ? !canCreateProject() : !canCreateDepartment()}
+                onCreate={viewMode === "project" ? (canCreateProject() ? goToCreateRoute : undefined) : (canCreateDepartment() ? goToCreateRoute : undefined)}
               />
             )}
           </aside>

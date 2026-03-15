@@ -16,7 +16,6 @@ type CommonLeftbarProps = {
   onSelect: (key: number) => void;
   emptyText: string;
   onCreate?: () => void;
-  disableCreate?: boolean;
 };
 
 export function CommonLeftbar({
@@ -26,7 +25,6 @@ export function CommonLeftbar({
   onSelect,
   emptyText,
   onCreate,
-  disableCreate,
 }: CommonLeftbarProps) {
   return (
     <Card className="h-full shadow-sm" bodyStyle={{ padding: 12 }}>
@@ -41,7 +39,6 @@ export function CommonLeftbar({
               type="text"
               shape="circle"
               icon={<PlusOutlined />}
-              disabled={disableCreate}
               onClick={onCreate}
             />
           </Space>
