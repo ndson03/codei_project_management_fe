@@ -372,6 +372,7 @@ export function HomeContent({
                           size="small"
                           pagination={false}
                           dataSource={departments}
+                          scroll={{ x: 2000 }}
                           onRow={(record) => ({
                             onClick: () => handleLeftbarSelect(record.partId),
                             className: "cursor-pointer",
@@ -385,21 +386,67 @@ export function HomeContent({
                             {
                               title: "Part Name",
                               dataIndex: "partName",
+                              width: 180,
                             },
                             {
                               title: "Department PIC User ID",
                               dataIndex: "departmentPicUserId",
+                              width: 180,
                               render: (value: number | null) => value ?? "Unassigned",
                             },
                             {
                               title: "Department PIC Username",
                               dataIndex: "departmentPicUsername",
+                              width: 200,
                               render: (value: string | null) => value ?? "Unassigned",
+                            },
+                            {
+                              title: "Git PAT",
+                              dataIndex: "gitPat",
+                              width: 180,
+                              render: (value: string) => value || "-",
+                            },
+                            {
+                              title: "Ecode PAT",
+                              dataIndex: "ecodePat",
+                              width: 180,
+                              render: (value: string) => value || "-",
+                            },
+                            {
+                              title: "Gerrit Username",
+                              dataIndex: "gerritUserName",
+                              width: 200,
+                              render: (value: string) => value || "-",
+                            },
+                            {
+                              title: "Gerrit HTTP Password",
+                              dataIndex: "gerritHttpPassword",
+                              width: 220,
+                              render: (value: string) => value || "-",
+                            },
+                            {
+                              title: "Jira SEC PAT",
+                              dataIndex: "jiraSecPat",
+                              width: 200,
+                              render: (value: string) => value || "-",
+                            },
+                            {
+                              title: "Jira MX PAT",
+                              dataIndex: "jiraMxPat",
+                              width: 200,
+                              render: (value: string) => value || "-",
+                            },
+                            {
+                              title: "Jira LA PAT",
+                              dataIndex: "jiraLaPat",
+                              width: 200,
+                              render: (value: string) => value || "-",
                             },
                             {
                               title: "Actions",
                               key: "actions",
                               width: 220,
+                              fixed: "right",
                               render: (_, record) => canEditDepartment() ? (
                                 <Space>
                                   <Button
