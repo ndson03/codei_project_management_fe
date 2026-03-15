@@ -1,7 +1,6 @@
 export type AccessMode = "ADMIN" | "PIC" | "PM" | "NONE";
 
 export type CurrentUser = {
-  id: number;
   username: string;
   fullname: string;
   email: string;
@@ -11,10 +10,15 @@ export type CurrentUser = {
 };
 
 export type UserResponse = {
-  id: number;
   username: string;
   fullname: string;
   email: string;
+  partId: number | null;
+};
+
+type GetUsersParams = {
+  assignmentType?: "PIC" | "PM";
+  deptId?: number;
 };
 
 export type CreateDepartmentRequest = {
@@ -26,7 +30,7 @@ export type CreateDepartmentRequest = {
   jiraSecPat: string;
   jiraMxPat: string;
   jiraLaPat: string;
-  departmentPicUserId?: number;
+  departmentPicUsername?: string;
 };
 
 export type DepartmentResponse = {
@@ -39,7 +43,6 @@ export type DepartmentResponse = {
   jiraSecPat: string;
   jiraMxPat: string;
   jiraLaPat: string;
-  departmentPicUserId: number | null;
   departmentPicUsername: string | null;
 };
 
@@ -52,7 +55,7 @@ export type CreateProjectRequest = {
   repositories: string[];
   pics: string[];
   devWhiteList: string[];
-  pmUserIds: number[];
+  pmUsernames: string[];
 };
 
 export type UpdateDepartmentRequest = {
@@ -65,7 +68,7 @@ export type UpdateDepartmentRequest = {
   jiraSecPat: string;
   jiraMxPat: string;
   jiraLaPat: string;
-  departmentPicUserId?: number;
+  departmentPicUsername?: string;
 };
 
 export type ProjectResponse = {
@@ -78,7 +81,7 @@ export type ProjectResponse = {
   repositories: string[];
   pics: string[];
   devWhiteList: string[];
-  pmUserIds: number[];
+  pmUsernames: string[];
 };
 
 export class HttpError extends Error {
@@ -132,8 +135,18 @@ export function getCurrentUser() {
   });
 }
 
-export function getUsers() {
-  return requestJson<UserResponse[]>("/api/users", {
+export function getUsers(params?: GetUsersParams) {
+  const query = new URLSearchParams();
+  if (params?.assignmentType) {
+    query.set("assignmentType", params.assignmentType);
+  }
+  if (params?.deptId != null) {
+    query.set("deptId", String(params.deptId));
+  }
+
+  const url = query.size ? `/api/users?${query.toString()}` : "/api/users";
+
+  return requestJson<UserResponse[]>(url, {
     method: "GET",
     cache: "no-store",
   });
@@ -171,7 +184,7 @@ export function createProject(payload: CreateProjectRequest) {
       repositories: payload.repositories,
       pics: payload.pics,
       devWhiteList: payload.devWhiteList,
-      pmUserIds: payload.pmUserIds,
+      pmUsernames: payload.pmUsernames,
     }),
   });
 }
@@ -188,7 +201,7 @@ export function updateDepartment(payload: UpdateDepartmentRequest) {
       jiraSecPat: payload.jiraSecPat,
       jiraMxPat: payload.jiraMxPat,
       jiraLaPat: payload.jiraLaPat,
-      departmentPicUserId: payload.departmentPicUserId,
+      departmentPicUsername: payload.departmentPicUsername,
     }),
   });
 }
@@ -221,7 +234,7 @@ export function updateProjectData(payload: CreateProjectRequest & { projectId: n
       repositories: payload.repositories,
       pics: payload.pics,
       devWhiteList: payload.devWhiteList,
-      pmUserIds: payload.pmUserIds,
+      pmUsernames: payload.pmUsernames,
     }),
   });
 }

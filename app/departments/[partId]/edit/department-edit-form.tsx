@@ -30,8 +30,8 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
   });
 
   const usersQuery = useQuery({
-    queryKey: ["users"],
-    queryFn: getUsers,
+    queryKey: ["users", "assignment", "PIC", partId],
+    queryFn: () => getUsers({ assignmentType: "PIC", deptId: partId }),
   });
 
   const department = useMemo(
@@ -75,7 +75,7 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
           jiraSecPat: department.jiraSecPat,
           jiraMxPat: department.jiraMxPat,
           jiraLaPat: department.jiraLaPat,
-          departmentPicUserId: department.departmentPicUserId ?? undefined,
+          departmentPicUsername: department.departmentPicUsername ?? undefined,
         }}
         onFinish={(values) => {
           updateMutation.mutate({
@@ -88,7 +88,7 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
             jiraSecPat: values.jiraSecPat,
             jiraMxPat: values.jiraMxPat,
             jiraLaPat: values.jiraLaPat,
-            departmentPicUserId: values.departmentPicUserId,
+            departmentPicUsername: values.departmentPicUsername,
           });
         }}
       >
@@ -116,15 +116,17 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
         <Form.Item name="jiraLaPat" label="Jira LA PAT" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
-        <Form.Item name="departmentPicUserId" label="Department PIC User">
+        <Form.Item name="departmentPicUsername" label="Department PIC User">
           <Select
             allowClear
+            showSearch
+            optionFilterProp="label"
             loading={usersQuery.isLoading}
             options={(usersQuery.data ?? []).map((user) => ({
-              value: user.id,
+              value: user.username,
               label: `${user.fullname} (${user.username})`,
             }))}
-            placeholder="Select PIC user"
+            placeholder="Search and select PIC user"
           />
         </Form.Item>
 

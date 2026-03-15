@@ -19,8 +19,8 @@ export function DepartmentCreateForm() {
   const queryClient = useQueryClient();
 
   const usersQuery = useQuery({
-    queryKey: ["users"],
-    queryFn: getUsers,
+    queryKey: ["users", "assignment", "PIC"],
+    queryFn: () => getUsers({ assignmentType: "PIC" }),
   });
 
   const createDepartmentMutation = useMutation({
@@ -47,7 +47,7 @@ export function DepartmentCreateForm() {
             jiraSecPat: values.jiraSecPat,
             jiraMxPat: values.jiraMxPat,
             jiraLaPat: values.jiraLaPat,
-            departmentPicUserId: values.departmentPicUserId,
+            departmentPicUsername: values.departmentPicUsername,
           });
         }}
       >
@@ -75,15 +75,17 @@ export function DepartmentCreateForm() {
         <Form.Item name="jiraLaPat" label="Jira LA PAT" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
-        <Form.Item name="departmentPicUserId" label="Department PIC User">
+        <Form.Item name="departmentPicUsername" label="Department PIC User">
           <Select
             allowClear
+            showSearch
+            optionFilterProp="label"
             loading={usersQuery.isLoading}
             options={(usersQuery.data ?? []).map((user) => ({
-              value: user.id,
+              value: user.username,
               label: `${user.fullname} (${user.username})`,
             }))}
-            placeholder="Select PIC user"
+            placeholder="Search and select PIC user"
           />
         </Form.Item>
 

@@ -236,8 +236,8 @@ export function HomeContent({
             <Descriptions.Item label="Dev White List">
               {project.devWhiteList.length ? project.devWhiteList.join(", ") : "-"}
             </Descriptions.Item>
-          <Descriptions.Item label="PM User IDs">
-            {project.pmUserIds.length ? project.pmUserIds.join(", ") : "-"}
+          <Descriptions.Item label="PM Usernames">
+            {project.pmUsernames.length ? project.pmUsernames.join(", ") : "-"}
           </Descriptions.Item>
         </Descriptions>
       </Card>
@@ -253,9 +253,6 @@ export function HomeContent({
         <Descriptions column={1} bordered>
           <Descriptions.Item label="Part ID">{department.partId}</Descriptions.Item>
           <Descriptions.Item label="Part Name">{department.partName}</Descriptions.Item>
-          <Descriptions.Item label="Department PIC User ID">
-            {department.departmentPicUserId ?? "Unassigned"}
-          </Descriptions.Item>
           <Descriptions.Item label="Department PIC Username">
             {department.departmentPicUsername ?? "Unassigned"}
           </Descriptions.Item>
@@ -302,9 +299,9 @@ export function HomeContent({
           key: department.partId,
           title: department.partName,
           subtitle:
-            department.departmentPicUserId == null
+            department.departmentPicUsername == null
               ? "PIC: Unassigned"
-              : `PIC User: ${department.departmentPicUserId}`,
+              : `PIC User: ${department.departmentPicUsername}`,
         }));
 
   const activeLeftbarId = viewMode === "project" ? selectedProjectId : selectedDepartmentId;
@@ -420,12 +417,6 @@ export function HomeContent({
                               title: "Part Name",
                               dataIndex: "partName",
                               width: 180,
-                            },
-                            {
-                              title: "Department PIC User ID",
-                              dataIndex: "departmentPicUserId",
-                              width: 180,
-                              render: (value: number | null) => value ?? "Unassigned",
                             },
                             {
                               title: "Department PIC Username",
@@ -579,10 +570,10 @@ export function HomeContent({
                               render: (value: string[]) => (value.length ? value.join(", ") : "-"),
                             },
                             {
-                              title: "PM User IDs",
-                              dataIndex: "pmUserIds",
+                              title: "PM Usernames",
+                              dataIndex: "pmUsernames",
                               width: 180,
-                              render: (value: number[]) => (value.length ? value.join(", ") : "-"),
+                              render: (value: string[]) => (value.length ? value.join(", ") : "-"),
                             },
                             {
                               title: "Actions",

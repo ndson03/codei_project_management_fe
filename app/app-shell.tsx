@@ -67,9 +67,9 @@ export function AppShell({ initialFullName, initialAccessMode, viewMode, childre
           key: department.partId,
           title: department.partName,
           subtitle:
-            department.departmentPicUserId == null
+            department.departmentPicUsername == null
               ? "PIC: Unassigned"
-              : `PIC User: ${department.departmentPicUserId}`,
+              : `PIC User: ${department.departmentPicUsername}`,
         }));
 
   useEffect(() => {

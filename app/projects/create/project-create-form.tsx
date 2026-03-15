@@ -39,11 +39,6 @@ export function ProjectCreateForm() {
     queryFn: getDepartments,
   });
 
-  const usersQuery = useQuery({
-    queryKey: ["users"],
-    queryFn: getUsers,
-  });
-
   const resolvedDeptId = useMemo(() => {
     if (Number.isFinite(requestedDeptId)) {
       return requestedDeptId;
@@ -61,6 +56,12 @@ export function ProjectCreateForm() {
     () => (departmentsQuery.data ?? []).find((department) => department.partId === resolvedDeptId),
     [departmentsQuery.data, resolvedDeptId],
   );
+
+  const usersQuery = useQuery({
+    queryKey: ["users", "assignment", "PM", resolvedDeptId],
+    queryFn: () => getUsers({ assignmentType: "PM", deptId: resolvedDeptId }),
+    enabled: Number.isFinite(resolvedDeptId),
+  });
 
   const createProjectMutation = useMutation({
     mutationFn: createProject,
@@ -93,7 +94,7 @@ export function ProjectCreateForm() {
             repositories: parseCsv(values.repositories || ""),
             pics: parseCsv(values.pics || ""),
             devWhiteList: parseCsv(values.devWhiteList || ""),
-            pmUserIds: values.pmUserIds || [],
+            pmUsernames: values.pmUsernames || [],
           });
         }}
       >
@@ -134,16 +135,18 @@ export function ProjectCreateForm() {
         <Form.Item name="devWhiteList" label="Dev White List (comma separated)">
           <Input placeholder="dev01, dev02" />
         </Form.Item>
-        <Form.Item name="pmUserIds" label="PM Users">
+        <Form.Item name="pmUsernames" label="PM Users">
           <Select
             mode="multiple"
             allowClear
+            showSearch
+            optionFilterProp="label"
             loading={usersQuery.isLoading}
             options={(usersQuery.data ?? []).map((user) => ({
-              value: user.id,
+              value: user.username,
               label: `${user.fullname} (${user.username})`,
             }))}
-            placeholder="Select PM users"
+            placeholder="Search and select PM users"
           />
         </Form.Item>
 

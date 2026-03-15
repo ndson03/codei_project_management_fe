@@ -36,11 +36,6 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
     queryFn: getProjects,
   });
 
-  const usersQuery = useQuery({
-    queryKey: ["users"],
-    queryFn: getUsers,
-  });
-
   const currentUserQuery = useQuery({
     queryKey: ["current-user"],
     queryFn: getCurrentUser,
@@ -62,6 +57,12 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
   });
 
   const canManagePmAssignments = currentUserQuery.data?.accessMode === "PIC";
+
+  const usersQuery = useQuery({
+    queryKey: ["users", "assignment", "PM", project?.departmentId],
+    queryFn: () => getUsers({ assignmentType: "PM", deptId: project?.departmentId }),
+    enabled: canManagePmAssignments && project?.departmentId != null,
+  });
 
   if (projectsQuery.isLoading) {
     return <Card className="shadow-sm">Loading project...</Card>;
@@ -89,7 +90,7 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
           repositories: project.repositories.join(", "),
           pics: project.pics.join(", "),
           devWhiteList: project.devWhiteList.join(", "),
-          pmUserIds: project.pmUserIds,
+          pmUsernames: project.pmUsernames,
         }}
         onFinish={(values) => {
           updateMutation.mutate({
@@ -102,7 +103,7 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
             repositories: parseCsv(values.repositories || ""),
             pics: parseCsv(values.pics || ""),
             devWhiteList: parseCsv(values.devWhiteList || ""),
-            pmUserIds: canManagePmAssignments ? values.pmUserIds || [] : project.pmUserIds,
+            pmUsernames: canManagePmAssignments ? values.pmUsernames || [] : project.pmUsernames,
           });
         }}
       >
@@ -134,16 +135,18 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
           <Input />
         </Form.Item>
         {canManagePmAssignments ? (
-          <Form.Item name="pmUserIds" label="PM Users">
+          <Form.Item name="pmUsernames" label="PM Users">
             <Select
               mode="multiple"
               allowClear
+              showSearch
+              optionFilterProp="label"
               loading={usersQuery.isLoading}
               options={(usersQuery.data ?? []).map((user) => ({
-                value: user.id,
+                value: user.username,
                 label: `${user.fullname} (${user.username})`,
               }))}
-              placeholder="Select PM users"
+              placeholder="Search and select PM users"
             />
           </Form.Item>
         ) : null}
