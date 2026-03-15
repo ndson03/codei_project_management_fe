@@ -1,0 +1,96 @@
+"use client";
+
+import Link from "next/link";
+import { useMutation } from "@tanstack/react-query";
+import { Alert, Button, Card, Form, Input, InputNumber, Space, Typography, message } from "antd";
+import { createDepartment, HttpError } from "@/lib/management-api";
+
+function renderMutationError(mutationError: unknown) {
+  if (!(mutationError instanceof HttpError)) {
+    return "Unexpected error";
+  }
+
+  return `${mutationError.status}: ${mutationError.message}`;
+}
+
+export function DepartmentCreateForm() {
+  const createDepartmentMutation = useMutation({
+    mutationFn: createDepartment,
+    onSuccess: () => {
+      message.success("Create department success");
+    },
+  });
+
+  return (
+    <Card className="shadow-sm" title="Create Department">
+      <Form
+        layout="vertical"
+        onFinish={(values) => {
+          createDepartmentMutation.mutate({
+            partId: values.partId,
+            partName: values.partName,
+            gitPat: values.gitPat,
+            ecodePat: values.ecodePat,
+            gerritUserName: values.gerritUserName,
+            gerritHttpPassword: values.gerritHttpPassword,
+            jiraSecPat: values.jiraSecPat,
+            jiraMxPat: values.jiraMxPat,
+            jiraLaPat: values.jiraLaPat,
+          });
+        }}
+      >
+        <Form.Item name="partId" label="Part ID" rules={[{ required: true }]}>
+          <InputNumber className="!w-full" />
+        </Form.Item>
+        <Form.Item name="partName" label="Part Name" rules={[{ required: true }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="gitPat" label="Git PAT" rules={[{ required: true }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="ecodePat" label="Ecode PAT" rules={[{ required: true }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="gerritUserName" label="Gerrit Username" rules={[{ required: true }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="gerritHttpPassword" label="Gerrit HTTP Password" rules={[{ required: true }]}>
+          <Input.Password />
+        </Form.Item>
+        <Form.Item name="jiraSecPat" label="Jira SEC PAT" rules={[{ required: true }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="jiraMxPat" label="Jira MX PAT" rules={[{ required: true }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="jiraLaPat" label="Jira LA PAT" rules={[{ required: true }]}>
+          <Input />
+        </Form.Item>
+
+        <Space>
+          <Button type="primary" htmlType="submit" loading={createDepartmentMutation.isPending}>
+            Submit
+          </Button>
+          <Link href="/departments">
+            <Button>Back</Button>
+          </Link>
+        </Space>
+      </Form>
+
+      {createDepartmentMutation.error ? (
+        <Alert
+          className="!mt-3"
+          type="error"
+          showIcon
+          message={renderMutationError(createDepartmentMutation.error)}
+        />
+      ) : null}
+
+      {createDepartmentMutation.data ? (
+        <Typography.Text type="success" className="!mt-3 block">
+          Department created successfully.
+        </Typography.Text>
+      ) : null}
+    </Card>
+  );
+}

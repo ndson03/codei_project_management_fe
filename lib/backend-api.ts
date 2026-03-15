@@ -12,6 +12,7 @@ export async function fetchBackend(path: string, init: RequestInit = {}) {
   if (!backendUrl) {
     throw new Error("Missing BACKEND_BASE_URL environment variable.");
   }
+  const normalizedBaseUrl = backendUrl.replace(/\/+$/, "");
 
   const session = await getServerAuthSession();
   if (!session?.accessToken) {
@@ -25,7 +26,7 @@ export async function fetchBackend(path: string, init: RequestInit = {}) {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${backendUrl}${path}`, {
+  const response = await fetch(`${normalizedBaseUrl}${path}`, {
     ...init,
     headers,
     cache: "no-store",
