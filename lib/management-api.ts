@@ -260,3 +260,9 @@ export async function deleteProject(projectId: number) {
     throw new HttpError(getErrorMessage(parsed), response.status, parsed);
   }
 }
+
+export function logoutFromBackend() {
+  return requestJson<{ message: string }>("/api/auth/logout", {
+    method: "POST",
+  });
+}

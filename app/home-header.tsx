@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import { Avatar, Button, Dropdown, Layout, Space, Tabs, Typography, type MenuProps } from "antd";
+import { logoutFromBackend } from "@/lib/management-api";
 
 type HomeHeaderProps = {
   fullName: string;
@@ -20,8 +21,12 @@ export function HomeHeader({ fullName, role, viewMode, sidebarCollapsed, onToggl
       key: "signout",
       label: "Sign out",
       danger: true,
-      onClick: () => {
-        void signOut({ callbackUrl: "/login" });
+      onClick: async () => {
+        try {
+          await logoutFromBackend();
+        } finally {
+          await signOut({ callbackUrl: "/login" });
+        }
       },
     },
   ];
