@@ -21,7 +21,7 @@ export function HomeHeader({
   fullName,
   accessMode,
   viewMode,
-  availableViewModes: _availableViewModes,
+  availableViewModes,
   sidebarCollapsed,
   onToggleSidebar,
 }: HomeHeaderProps) {
@@ -35,7 +35,7 @@ export function HomeHeader({
 
   const isDark = isMounted && resolvedTheme === "dark";
 
-  const tabItems = (["department", "project", "statistics"] as const).map((mode) => ({
+  const tabItems = availableViewModes.map((mode) => ({
     key: mode,
     label: (
       <span className="text-base font-semibold">

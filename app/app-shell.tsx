@@ -24,7 +24,7 @@ function getAvailableViewModes(accessMode: AccessMode) {
   }
 
   if (accessMode === "PIC") {
-    return ["department", "project", "statistics"] as const;
+    return ["project", "statistics"] as const;
   }
 
   if (accessMode === "PM") {
@@ -55,7 +55,19 @@ export function AppShell({ initialFullName, initialAccessMode, viewMode, childre
 
   const fullName = currentUser?.fullname ?? initialFullName;
   const accessMode = currentUser?.accessMode ?? initialAccessMode;
-  const availableViewModes = getAvailableViewModes(accessMode);
+  const availableViewModes = useMemo(() => {
+    const baseModes = [...getAvailableViewModes(accessMode)];
+
+    if (accessMode === "ADMIN") {
+      return ["department", ...baseModes.filter((mode) => mode !== "department")] as const;
+    }
+
+    if (currentUser?.departmentPicPartIds?.length) {
+      return ["department", ...baseModes.filter((mode) => mode !== "department")] as const;
+    }
+
+    return baseModes;
+  }, [accessMode, currentUser?.departmentPicPartIds]);
 
   const departments = useMemo(() => departmentsQuery.data ?? [], [departmentsQuery.data]);
   const projects = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
