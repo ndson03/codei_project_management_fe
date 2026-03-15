@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
+import { MenuFoldOutlined, MenuUnfoldOutlined, MoonOutlined, SunOutlined } from "@ant-design/icons";
 import { Avatar, Button, Dropdown, Layout, Space, Tabs, Typography, type MenuProps } from "antd";
+import { useTheme } from "next-themes";
 import { type AccessMode, logoutFromBackend } from "@/lib/management-api";
 
 type HomeHeaderProps = {
@@ -24,6 +26,14 @@ export function HomeHeader({
   onToggleSidebar,
 }: HomeHeaderProps) {
   const router = useRouter();
+  const { setTheme, resolvedTheme } = useTheme();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const isDark = isMounted && resolvedTheme === "dark";
 
   const tabItems = (["department", "project", "statistics"] as const).map((mode) => ({
     key: mode,
@@ -50,17 +60,17 @@ export function HomeHeader({
   ];
 
   return (
-    <Layout.Header className="!h-auto !bg-white !px-5 !py-2 shadow-sm">
+    <Layout.Header className="app-header !h-auto !px-5 !py-2 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-5">
           <Button
-            type="text"
+            type="default"
             aria-label={sidebarCollapsed ? "Open sidebar" : "Close sidebar"}
             icon={sidebarCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={onToggleSidebar}
           />
 
-          <Typography.Title level={5} className="!mb-0 !text-base">
+          <Typography.Title level={5} className="brand-title !mb-0 !text-base">
             Codei Project Management
           </Typography.Title>
 
@@ -79,6 +89,13 @@ export function HomeHeader({
         </div>
 
         <Space size="middle" align="center" wrap>
+          <Button
+            type="default"
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            icon={isDark ? <SunOutlined /> : <MoonOutlined />}
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+          />
+
           <Typography.Text strong>{fullName}</Typography.Text>
           <Typography.Text type="secondary">{accessMode}</Typography.Text>
 

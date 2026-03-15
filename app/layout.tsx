@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { ReactQueryProvider } from "./react-query-provider";
+import { ThemeProvider } from "./theme-provider";
 import "./globals.css";
 import "antd/dist/reset.css";
 
@@ -26,13 +27,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AntdRegistry>
-          <ReactQueryProvider>{children}</ReactQueryProvider>
-        </AntdRegistry>
+        <ThemeProvider>
+          <AntdRegistry>
+            <ReactQueryProvider>{children}</ReactQueryProvider>
+          </AntdRegistry>
+        </ThemeProvider>
       </body>
     </html>
   );

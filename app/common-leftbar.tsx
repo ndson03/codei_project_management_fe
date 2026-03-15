@@ -54,7 +54,7 @@ export function CommonLeftbar({
 
   return (
     <Card
-      className="h-full shadow-sm"
+      className="leftbar-card h-full shadow-sm"
       bodyStyle={{
         padding: 12,
         height: "100%",
@@ -71,7 +71,7 @@ export function CommonLeftbar({
         {onCreate ? (
           <Space size="small" align="center">
             <Button
-              type="text"
+              type="default"
               shape="circle"
               icon={<PlusOutlined />}
               onClick={onCreate}
@@ -89,10 +89,7 @@ export function CommonLeftbar({
             dataSource={items}
             renderItem={(item) => (
               <List.Item
-                className="cursor-pointer rounded px-2 transition-colors"
-                style={{
-                  background: item.key === activeKey ? "#e6f4ff" : "transparent",
-                }}
+                className={`leftbar-item cursor-pointer rounded px-2 transition-colors ${item.key === activeKey ? "active" : ""}`}
                 onClick={() => onSelect(item.key)}
               >
                 <List.Item.Meta

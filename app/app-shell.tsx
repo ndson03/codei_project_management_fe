@@ -146,7 +146,7 @@ export function AppShell({ initialFullName, initialAccessMode, viewMode, childre
       <Layout.Content className="!h-full !p-0 overflow-hidden">
         <div className="flex h-full overflow-hidden">
           <aside
-            className={`h-full overflow-y-auto border-r border-slate-200 bg-white transition-all duration-200 ${
+            className={`app-sidebar h-full overflow-y-auto border-r border-slate-200 transition-all duration-200 ${
               !showSidebar || isSidebarCollapsed ? "w-0 border-r-0 p-0" : "w-80 p-3"
             }`}
           >

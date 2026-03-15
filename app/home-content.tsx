@@ -359,7 +359,7 @@ export function HomeContent({
       <Layout.Content className="!h-full !p-0 overflow-hidden">
         <div className="flex h-full overflow-hidden">
           <aside
-            className={`h-full overflow-hidden border-r border-slate-200 bg-white transition-all duration-200 ${
+            className={`app-sidebar h-full overflow-hidden border-r border-slate-200 transition-all duration-200 ${
               isSidebarCollapsed ? "w-0 border-r-0 p-0" : "w-80 p-3"
             }`}
           >
