@@ -31,15 +31,15 @@ type HomeContentProps = {
 
 function getAvailableViewModes(accessMode: AccessMode) {
   if (accessMode === "ADMIN") {
-    return ["department", "project"] as const;
+    return ["department", "project", "statistics"] as const;
   }
 
   if (accessMode === "PIC") {
-    return ["department", "project"] as const;
+    return ["department", "project", "statistics"] as const;
   }
 
   if (accessMode === "PM") {
-    return ["project"] as const;
+    return ["project", "statistics"] as const;
   }
 
   return [] as const;
@@ -158,7 +158,13 @@ export function HomeContent({
     }
 
     if (!availableViewModes.some((mode) => mode === viewMode)) {
-      router.replace(availableViewModes[0] === "department" ? "/departments" : "/projects");
+      router.replace(
+        availableViewModes[0] === "department"
+          ? "/departments"
+          : availableViewModes[0] === "project"
+            ? "/projects"
+            : "/statistics",
+      );
     }
   }, [availableViewModes, router, viewMode]);
 

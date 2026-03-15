@@ -9,7 +9,7 @@ import { type AccessMode, getCurrentUser, getDepartments, getProjects, HttpError
 import { CommonLeftbar } from "./common-leftbar";
 import { HomeHeader } from "./home-header";
 
-type ViewMode = "department" | "project";
+type ViewMode = "department" | "project" | "statistics";
 
 type AppShellProps = {
   initialFullName: string;
@@ -20,15 +20,15 @@ type AppShellProps = {
 
 function getAvailableViewModes(accessMode: AccessMode) {
   if (accessMode === "ADMIN") {
-    return ["department", "project"] as const;
+    return ["department", "project", "statistics"] as const;
   }
 
   if (accessMode === "PIC") {
-    return ["department", "project"] as const;
+    return ["department", "project", "statistics"] as const;
   }
 
   if (accessMode === "PM") {
-    return ["project"] as const;
+    return ["project", "statistics"] as const;
   }
 
   return [] as const;
@@ -92,9 +92,17 @@ export function AppShell({ initialFullName, initialAccessMode, viewMode, childre
     }
 
     if (!availableViewModes.some((mode) => mode === viewMode)) {
-      router.replace(availableViewModes[0] === "department" ? "/departments" : "/projects");
+      router.replace(
+        availableViewModes[0] === "department"
+          ? "/departments"
+          : availableViewModes[0] === "project"
+            ? "/projects"
+            : "/statistics",
+      );
     }
   }, [availableViewModes, router, viewMode]);
+
+  const showSidebar = viewMode !== "statistics";
 
   function canCreateDepartment() {
     return accessMode === "ADMIN";
@@ -139,10 +147,10 @@ export function AppShell({ initialFullName, initialAccessMode, viewMode, childre
         <div className="flex h-full overflow-hidden">
           <aside
             className={`h-full overflow-y-auto border-r border-slate-200 bg-white transition-all duration-200 ${
-              isSidebarCollapsed ? "w-0 border-r-0 p-0" : "w-80 p-3"
+              !showSidebar || isSidebarCollapsed ? "w-0 border-r-0 p-0" : "w-80 p-3"
             }`}
           >
-            {isSidebarCollapsed ? null : (
+            {!showSidebar || isSidebarCollapsed ? null : (
               <CommonLeftbar
                 title={viewMode === "project" ? "Project List" : "Department List"}
                 items={leftbarItems}

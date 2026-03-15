@@ -82,6 +82,31 @@ export type ProjectResponse = {
   devWhiteList: string[];
 };
 
+export type StatisticResult = {
+  departmentId: number | null;
+  departmentName: string | null;
+  project: string | null;
+  issueKey: string | null;
+  prNumber: number | null;
+  createdTime: string | null;
+  mergedTime: string | null;
+  week: string | null;
+  aiSupport: string | null;
+  numberOfCommit: number | null;
+  numberOfSegments: number | null;
+  pattern: string | null;
+  numberOfFile: number | null;
+  aiLoc: number | null;
+  firstAiLoc: number | null;
+  developerLoc: number | null;
+  aiContribution: number | null;
+  service: string | null;
+  language: string | null;
+  taskType: string | null;
+  devType: string | null;
+  cycleTimeHour: number | null;
+};
+
 export class HttpError extends Error {
   constructor(message: string, public status: number, public details?: unknown) {
     super(message);
@@ -159,6 +184,13 @@ export function getDepartments() {
 
 export function getProjects() {
   return requestJson<ProjectResponse[]>("/api/projects", {
+    method: "GET",
+    cache: "no-store",
+  });
+}
+
+export function getStatisticResults() {
+  return requestJson<StatisticResult[]>("/api/statistics", {
     method: "GET",
     cache: "no-store",
   });

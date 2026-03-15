@@ -9,8 +9,8 @@ import { type AccessMode, logoutFromBackend } from "@/lib/management-api";
 type HomeHeaderProps = {
   fullName: string;
   accessMode: AccessMode;
-  viewMode: "department" | "project";
-  availableViewModes: Array<"department" | "project">;
+  viewMode: "department" | "project" | "statistics";
+  availableViewModes: Array<"department" | "project" | "statistics">;
   sidebarCollapsed: boolean;
   onToggleSidebar: () => void;
 };
@@ -25,9 +25,13 @@ export function HomeHeader({
 }: HomeHeaderProps) {
   const router = useRouter();
 
-  const tabItems = (["department", "project"] as const).map((mode) => ({
+  const tabItems = (["department", "project", "statistics"] as const).map((mode) => ({
     key: mode,
-    label: <span className="text-base font-semibold">{mode === "department" ? "Department" : "Project"}</span>,
+    label: (
+      <span className="text-base font-semibold">
+        {mode === "department" ? "Department" : mode === "project" ? "Project" : "StatisticResult"}
+      </span>
+    ),
   }));
 
   const profileMenuItems: MenuProps["items"] = [
@@ -66,7 +70,9 @@ export function HomeHeader({
             tabBarStyle={{ margin: 0 }}
             activeKey={viewMode}
             onChange={(key) => {
-              router.push(key === "department" ? "/departments" : "/projects");
+              router.push(
+                key === "department" ? "/departments" : key === "project" ? "/projects" : "/statistics",
+              );
             }}
             items={tabItems}
           />
