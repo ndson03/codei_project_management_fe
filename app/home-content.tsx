@@ -2,10 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { Alert, Button, Card, Descriptions, Empty, Layout, Space, Table, Typography, message } from "antd";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Alert, Button, Card, Descriptions, Empty, Layout, Popconfirm, Space, Table, Typography, message } from "antd";
 import { signOut } from "next-auth/react";
-import { getCurrentUser, getDepartments, getProjects, type ProjectResponse, HttpError } from "@/lib/management-api";
+import {
+  deleteDepartment,
+  deleteProject,
+  getCurrentUser,
+  getDepartments,
+  getProjects,
+  type ProjectResponse,
+  HttpError,
+} from "@/lib/management-api";
 import { CommonLeftbar } from "./common-leftbar";
 import { HomeHeader } from "./home-header";
 
@@ -55,6 +63,24 @@ export function HomeContent({
     queryFn: getProjects,
   });
 
+  const deleteDepartmentMutation = useMutation({
+    mutationFn: deleteDepartment,
+    onSuccess: () => {
+      message.success("Department deleted");
+      void departmentsQuery.refetch();
+      router.push("/departments");
+    },
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: deleteProject,
+    onSuccess: () => {
+      message.success("Project deleted");
+      void projectsQuery.refetch();
+      router.push("/projects");
+    },
+  });
+
   const fullName = currentUser?.fullname ?? initialFullName;
   const role = normalizeRole(currentUser?.role ?? initialRole);
 
@@ -87,6 +113,14 @@ export function HomeContent({
   }
 
   function canCreateProject() {
+    return role === "DEPT_PIC";
+  }
+
+  function canEditDepartment() {
+    return role === "ADMIN";
+  }
+
+  function canEditProjectData() {
     return role === "DEPT_PIC";
   }
 
@@ -217,6 +251,35 @@ export function HomeContent({
 
               {viewMode === "project" && selectedProject ? renderProjectDetail(selectedProject) : null}
 
+              {viewMode === "project" && selectedProject ? (
+                <Card className="shadow-sm">
+                  <Space wrap>
+                    <Button
+                      disabled={!canEditProjectData()}
+                      onClick={() => router.push(`/projects/${selectedProject.id}/edit`)}
+                    >
+                      Edit Project Data
+                    </Button>
+
+                    <Popconfirm
+                      title="Delete this project?"
+                      description="This action cannot be undone."
+                      okText="Delete"
+                      okButtonProps={{ danger: true, loading: deleteProjectMutation.isPending }}
+                      onConfirm={() => {
+                        if (!canEditProjectData()) {
+                          message.error("Forbidden (403): You do not have permission to delete project.");
+                          return;
+                        }
+                        void deleteProjectMutation.mutateAsync(selectedProject.id);
+                      }}
+                    >
+                      <Button danger disabled={!canEditProjectData()}>Delete Project</Button>
+                    </Popconfirm>
+                  </Space>
+                </Card>
+              ) : null}
+
               {viewMode === "department" && selectedDepartment ? (
                 <Card className="shadow-sm">
                   <Typography.Title level={4} className="!mb-4">
@@ -231,13 +294,38 @@ export function HomeContent({
                   </Descriptions>
 
                   <div className="mt-6">
-                    <Button
-                      type="primary"
-                      disabled={!canCreateDepartment() && !canCreateProject()}
-                      onClick={goToCreateRoute}
-                    >
-                      {viewMode === "department" ? "Create Department / Project" : "Create Project"}
-                    </Button>
+                    <Space wrap>
+                      <Button
+                        type="primary"
+                        disabled={!canCreateDepartment() && !canCreateProject()}
+                        onClick={goToCreateRoute}
+                      >
+                        {viewMode === "department" ? "Create Department / Project" : "Create Project"}
+                      </Button>
+
+                      <Button
+                        disabled={!canEditDepartment()}
+                        onClick={() => router.push(`/departments/${selectedDepartment.partId}/edit`)}
+                      >
+                        Edit Department
+                      </Button>
+
+                      <Popconfirm
+                        title="Delete this department?"
+                        description="This action cannot be undone."
+                        okText="Delete"
+                        okButtonProps={{ danger: true, loading: deleteDepartmentMutation.isPending }}
+                        onConfirm={() => {
+                          if (!canEditDepartment()) {
+                            message.error("Forbidden (403): You do not have permission to delete department.");
+                            return;
+                          }
+                          void deleteDepartmentMutation.mutateAsync(selectedDepartment.partId);
+                        }}
+                      >
+                        <Button danger disabled={!canEditDepartment()}>Delete Department</Button>
+                      </Popconfirm>
+                    </Space>
                   </div>
                 </Card>
               ) : null}
@@ -291,6 +379,51 @@ export function HomeContent({
                               title: "Department PIC User ID",
                               dataIndex: "departmentPicUserId",
                               render: (value: number | null) => value ?? "Unassigned",
+                            },
+                            {
+                              title: "Actions",
+                              key: "actions",
+                              width: 220,
+                              render: (_, record) => (
+                                <Space>
+                                  <Button
+                                    size="small"
+                                    disabled={!canEditDepartment()}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      router.push(`/departments/${record.partId}/edit`);
+                                    }}
+                                  >
+                                    Edit
+                                  </Button>
+
+                                  <Popconfirm
+                                    title="Delete this department?"
+                                    description="This action cannot be undone."
+                                    okText="Delete"
+                                    okButtonProps={{
+                                      danger: true,
+                                      loading: deleteDepartmentMutation.isPending,
+                                    }}
+                                    onConfirm={() => {
+                                      if (!canEditDepartment()) {
+                                        message.error("Forbidden (403): You do not have permission to delete department.");
+                                        return;
+                                      }
+                                      void deleteDepartmentMutation.mutateAsync(record.partId);
+                                    }}
+                                  >
+                                    <Button
+                                      size="small"
+                                      danger
+                                      disabled={!canEditDepartment()}
+                                      onClick={(event) => event.stopPropagation()}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </Popconfirm>
+                                </Space>
+                              ),
                             },
                           ]}
                         />
@@ -362,6 +495,52 @@ export function HomeContent({
                               dataIndex: "pmUserIds",
                               width: 180,
                               render: (value: number[]) => (value.length ? value.join(", ") : "-"),
+                            },
+                            {
+                              title: "Actions",
+                              key: "actions",
+                              width: 220,
+                              fixed: "right",
+                              render: (_, record) => (
+                                <Space>
+                                  <Button
+                                    size="small"
+                                    disabled={!canEditProjectData()}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      router.push(`/projects/${record.id}/edit`);
+                                    }}
+                                  >
+                                    Edit
+                                  </Button>
+
+                                  <Popconfirm
+                                    title="Delete this project?"
+                                    description="This action cannot be undone."
+                                    okText="Delete"
+                                    okButtonProps={{
+                                      danger: true,
+                                      loading: deleteProjectMutation.isPending,
+                                    }}
+                                    onConfirm={() => {
+                                      if (!canEditProjectData()) {
+                                        message.error("Forbidden (403): You do not have permission to delete project.");
+                                        return;
+                                      }
+                                      void deleteProjectMutation.mutateAsync(record.id);
+                                    }}
+                                  >
+                                    <Button
+                                      size="small"
+                                      danger
+                                      disabled={!canEditProjectData()}
+                                      onClick={(event) => event.stopPropagation()}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </Popconfirm>
+                                </Space>
+                              ),
                             },
                           ]}
                         />

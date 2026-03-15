@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ApiAuthError, fetchBackend } from "@/lib/backend-api";
 
-export async function proxyBackendRequest(path: string, method: "GET" | "POST" | "PUT", request?: Request) {
+export async function proxyBackendRequest(path: string, method: "GET" | "POST" | "PUT" | "DELETE", request?: Request) {
   try {
     const bodyText = request ? await request.text() : "";
 

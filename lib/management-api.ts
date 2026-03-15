@@ -42,6 +42,18 @@ export type CreateProjectRequest = {
   devWhiteList: string[];
 };
 
+export type UpdateDepartmentRequest = {
+  deptId: number;
+  partName: string;
+  gitPat: string;
+  ecodePat: string;
+  gerritUserName: string;
+  gerritHttpPassword: string;
+  jiraSecPat: string;
+  jiraMxPat: string;
+  jiraLaPat: string;
+};
+
 export type ProjectResponse = {
   id: number;
   departmentId: number;
@@ -182,4 +194,69 @@ export function updateProject(payload: UpdateProjectRequest) {
       repositories: payload.repositories,
     }),
   });
+}
+
+export function updateDepartment(payload: UpdateDepartmentRequest) {
+  return requestJson<DepartmentResponse>(`/api/admin/departments/${payload.deptId}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      partName: payload.partName,
+      gitPat: payload.gitPat,
+      ecodePat: payload.ecodePat,
+      gerritUserName: payload.gerritUserName,
+      gerritHttpPassword: payload.gerritHttpPassword,
+      jiraSecPat: payload.jiraSecPat,
+      jiraMxPat: payload.jiraMxPat,
+      jiraLaPat: payload.jiraLaPat,
+    }),
+  });
+}
+
+export async function deleteDepartment(deptId: number) {
+  const response = await fetch(`/api/admin/departments/${deptId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const raw = await response.text();
+    let parsed: unknown = raw;
+    try {
+      parsed = raw ? JSON.parse(raw) : null;
+    } catch {
+      parsed = raw;
+    }
+    throw new HttpError(getErrorMessage(parsed), response.status, parsed);
+  }
+}
+
+export function updateProjectData(payload: CreateProjectRequest & { projectId: number }) {
+  return requestJson<ProjectResponse>(`/api/projects/${payload.projectId}/data`, {
+    method: "PUT",
+    body: JSON.stringify({
+      projectName: payload.projectName,
+      branch: payload.branch,
+      notes: payload.notes,
+      taskManagements: payload.taskManagements,
+      repositories: payload.repositories,
+      pics: payload.pics,
+      devWhiteList: payload.devWhiteList,
+    }),
+  });
+}
+
+export async function deleteProject(projectId: number) {
+  const response = await fetch(`/api/projects/${projectId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const raw = await response.text();
+    let parsed: unknown = raw;
+    try {
+      parsed = raw ? JSON.parse(raw) : null;
+    } catch {
+      parsed = raw;
+    }
+    throw new HttpError(getErrorMessage(parsed), response.status, parsed);
+  }
 }

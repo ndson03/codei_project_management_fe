@@ -2,16 +2,16 @@ import { proxyBackendRequest } from "@/lib/api-route-proxy";
 
 type RouteParams = {
   params: Promise<{
-    projectId: string;
+    deptId: string;
   }>;
 };
 
 export async function PUT(request: Request, { params }: RouteParams) {
-  const { projectId } = await params;
-  return proxyBackendRequest(`/api/projects/${projectId}`, "PUT", request);
+  const { deptId } = await params;
+  return proxyBackendRequest(`/api/admin/departments/${deptId}`, "PUT", request);
 }
 
 export async function DELETE(_: Request, { params }: RouteParams) {
-  const { projectId } = await params;
-  return proxyBackendRequest(`/api/projects/${projectId}`, "DELETE");
+  const { deptId } = await params;
+  return proxyBackendRequest(`/api/admin/departments/${deptId}`, "DELETE");
 }
