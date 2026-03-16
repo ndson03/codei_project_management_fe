@@ -79,7 +79,7 @@ export function AppShell({ initialFullName, initialAccessMode, viewMode, childre
       ? displayedProjects.map((project) => ({
           key: project.id,
           title: project.projectName,
-          subtitle: `Branch: ${project.branch || "-"}`,
+          subtitle: project.pics.length ? `PICs: ${project.pics.join(", ")}` : "PICs: -",
         }))
       : departments.map((department) => ({
           key: department.partId,
