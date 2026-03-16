@@ -57,6 +57,7 @@ export function HomeContent({
   const queryClient = useQueryClient();
   const mainScrollRef = useRef<HTMLDivElement | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [projectScope, setProjectScope] = useState<"my" | "all">("all");
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | undefined>(initialSelectedDepartmentId);
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(initialSelectedProjectId);
   const [departmentPagination, setDepartmentPagination] = useState({ current: 1, pageSize: TABLE_PAGE_SIZE_DEFAULT });
@@ -137,6 +138,15 @@ export function HomeContent({
 
   const departments = useMemo(() => departmentsQuery.data ?? [], [departmentsQuery.data]);
   const projects = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
+  const managedDepartmentIds = useMemo(() => currentUser?.departmentPicPartIds ?? [], [currentUser?.departmentPicPartIds]);
+  const myProjects = useMemo(
+    () => projects.filter((project) => managedDepartmentIds.includes(project.departmentId)),
+    [projects, managedDepartmentIds],
+  );
+  const displayedProjects = useMemo(
+    () => (projectScope === "my" ? myProjects : projects),
+    [projectScope, myProjects, projects],
+  );
 
   const selectedDepartment = departments.find((department) => department.partId === selectedDepartmentId);
   const selectedProject = projects.find((project) => project.id === selectedProjectId);
@@ -158,6 +168,20 @@ export function HomeContent({
   useEffect(() => {
     setSelectedProjectId(initialSelectedProjectId);
   }, [initialSelectedProjectId]);
+
+  useEffect(() => {
+    if (accessMode === "PIC") {
+      const savedScope = window.sessionStorage.getItem("project-scope");
+      if (savedScope === "my" || savedScope === "all") {
+        setProjectScope(savedScope);
+        return;
+      }
+      setProjectScope("all");
+      return;
+    }
+
+    setProjectScope("all");
+  }, [accessMode]);
 
   useEffect(() => {
     if (availableViewModes.length === 0) {
@@ -191,12 +215,28 @@ export function HomeContent({
     return accessMode === "ADMIN";
   }
 
-  function canEditProjectData() {
-    return accessMode === "ADMIN" || accessMode === "PIC";
+  function canEditProjectData(project: ProjectResponse) {
+    if (accessMode === "ADMIN") {
+      return true;
+    }
+
+    if (accessMode === "PIC") {
+      return managedDepartmentIds.includes(project.departmentId);
+    }
+
+    return false;
   }
 
-  function canDeleteProjectData() {
-    return accessMode === "ADMIN" || accessMode === "PIC";
+  function canDeleteProjectData(project: ProjectResponse) {
+    if (accessMode === "ADMIN") {
+      return true;
+    }
+
+    if (accessMode === "PIC") {
+      return managedDepartmentIds.includes(project.departmentId);
+    }
+
+    return false;
   }
 
   function goToCreateRoute() {
@@ -215,19 +255,22 @@ export function HomeContent({
       return;
     }
 
-    const defaultDepartmentId = selectedDepartmentId ?? departments[0]?.partId;
+    const defaultDepartmentId =
+      selectedDepartmentId ??
+      (accessMode === "PIC" ? managedDepartmentIds[0] : undefined) ??
+      departments[0]?.partId;
     const deptQuery = defaultDepartmentId ? `?deptId=${defaultDepartmentId}` : "";
     router.push(`/projects/create${deptQuery}`);
   }
 
   function handleLeftbarSelect(id: number) {
     if (viewMode === "project") {
-      const project = projects.find((item) => item.id === id);
+      const project = displayedProjects.find((item) => item.id === id);
       if (!project) {
         return;
       }
 
-      router.push(`/projects/${project.id}`);
+      router.push(`/projects/${project.id}`, { scroll: false });
       return;
     }
 
@@ -258,14 +301,14 @@ export function HomeContent({
             </Descriptions.Item>
         </Descriptions>
 
-        {canEditProjectData() ? (
+        {canEditProjectData(project) ? (
           <div className="mt-6">
             <Space wrap>
               <Button onClick={() => router.push(`/projects/${project.id}/edit`)}>
                 Edit Project Data
               </Button>
 
-              {canDeleteProjectData() ? (
+              {canDeleteProjectData(project) ? (
                 <Popconfirm
                   title="Delete this project?"
                   description="This action cannot be undone."
@@ -332,7 +375,7 @@ export function HomeContent({
 
   const leftbarItems =
     viewMode === "project"
-      ? projects.map((project) => ({
+      ? displayedProjects.map((project) => ({
           key: project.id,
           title: project.projectName,
           subtitle: project.pics.length ? `PICs: ${project.pics.join(", ")}` : "PICs: -",
@@ -373,6 +416,24 @@ export function HomeContent({
                 activeKey={activeLeftbarId}
                 onSelect={handleLeftbarSelect}
                 emptyText={viewMode === "project" ? "No projects found" : "No departments found"}
+                headerTabs={
+                  viewMode === "project" && accessMode === "PIC"
+                    ? [
+                        { key: "my", label: "My Project" },
+                        { key: "all", label: "All Project" },
+                      ]
+                    : undefined
+                }
+                activeHeaderTabKey={viewMode === "project" && accessMode === "PIC" ? projectScope : undefined}
+                onHeaderTabChange={
+                  viewMode === "project" && accessMode === "PIC"
+                    ? (key) => {
+                        const nextScope = key === "my" ? "my" : "all";
+                        setProjectScope(nextScope);
+                        window.sessionStorage.setItem("project-scope", nextScope);
+                      }
+                    : undefined
+                }
                 onCreate={viewMode === "project" ? (canCreateProject() ? goToCreateRoute : undefined) : (canCreateDepartment() ? goToCreateRoute : undefined)}
                 scrollStorageKey={viewMode === "project" ? "leftbar-scroll-project" : "leftbar-scroll-department"}
               />
@@ -401,7 +462,7 @@ export function HomeContent({
                     {viewMode === "department" ? "Department List" : "Project List"}
                   </Typography.Title>
 
-                  {(viewMode === "department" ? departments.length : projects.length) === 0 ? (
+                  {(viewMode === "department" ? departments.length : displayedProjects.length) === 0 ? (
                     <Empty
                       description={
                         viewMode === "project"
@@ -508,7 +569,7 @@ export function HomeContent({
                           pagination={{
                             current: projectPagination.current,
                             pageSize: projectPagination.pageSize,
-                            total: projects.length,
+                            total: displayedProjects.length,
                             showSizeChanger: true,
                             pageSizeOptions: [...TABLE_PAGE_SIZE_OPTIONS],
                           }}
@@ -516,7 +577,7 @@ export function HomeContent({
                             offsetHeader: 0,
                             getContainer: () => mainScrollRef.current ?? document.body,
                           }}
-                          dataSource={projects}
+                          dataSource={displayedProjects}
                           onChange={(pagination) => {
                             setProjectPagination({
                               current: pagination.current ?? 1,

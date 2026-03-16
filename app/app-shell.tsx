@@ -29,6 +29,7 @@ function getAvailableViewModes(accessMode: AccessMode) {
 export function AppShell({ initialFullName, initialAccessMode, viewMode, children }: AppShellProps) {
   const router = useRouter();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [projectScope, setProjectScope] = useState<"my" | "all">("all");
 
   const { data: currentUser, error: currentUserError, isLoading: isProfileLoading } = useQuery({
     queryKey: ["current-user"],
@@ -63,10 +64,19 @@ export function AppShell({ initialFullName, initialAccessMode, viewMode, childre
 
   const departments = useMemo(() => departmentsQuery.data ?? [], [departmentsQuery.data]);
   const projects = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
+  const managedDepartmentIds = useMemo(() => currentUser?.departmentPicPartIds ?? [], [currentUser?.departmentPicPartIds]);
+  const myProjects = useMemo(
+    () => projects.filter((project) => managedDepartmentIds.includes(project.departmentId)),
+    [projects, managedDepartmentIds],
+  );
+  const displayedProjects = useMemo(
+    () => (projectScope === "my" ? myProjects : projects),
+    [projectScope, myProjects, projects],
+  );
 
   const leftbarItems =
     viewMode === "project"
-      ? projects.map((project) => ({
+      ? displayedProjects.map((project) => ({
           key: project.id,
           title: project.projectName,
           subtitle: `Branch: ${project.branch || "-"}`,
@@ -106,6 +116,20 @@ export function AppShell({ initialFullName, initialAccessMode, viewMode, childre
     }
   }, [availableViewModes, router, viewMode]);
 
+  useEffect(() => {
+    if (accessMode === "PIC") {
+      const savedScope = window.sessionStorage.getItem("project-scope");
+      if (savedScope === "my" || savedScope === "all") {
+        setProjectScope(savedScope);
+        return;
+      }
+      setProjectScope("all");
+      return;
+    }
+
+    setProjectScope("all");
+  }, [accessMode]);
+
   const showSidebar = viewMode !== "statistics";
 
   function canCreateDepartment() {
@@ -122,7 +146,8 @@ export function AppShell({ initialFullName, initialAccessMode, viewMode, childre
       return;
     }
 
-    const defaultDepartmentId = departments[0]?.partId;
+    const defaultDepartmentId =
+      (accessMode === "PIC" ? managedDepartmentIds[0] : undefined) ?? departments[0]?.partId;
     const deptQuery = defaultDepartmentId ? `?deptId=${defaultDepartmentId}` : "";
     router.push(`/projects/create${deptQuery}`);
   }
@@ -133,7 +158,12 @@ export function AppShell({ initialFullName, initialAccessMode, viewMode, childre
       return;
     }
 
-    router.push(`/projects/${id}`);
+    const project = displayedProjects.find((item) => item.id === id);
+    if (!project) {
+      return;
+    }
+
+    router.push(`/projects/${project.id}`, { scroll: false });
   }
 
   return (
@@ -160,6 +190,24 @@ export function AppShell({ initialFullName, initialAccessMode, viewMode, childre
                 items={leftbarItems}
                 onSelect={handleLeftbarSelect}
                 emptyText={viewMode === "project" ? "No projects found" : "No departments found"}
+                headerTabs={
+                  viewMode === "project" && accessMode === "PIC"
+                    ? [
+                        { key: "my", label: "My Project" },
+                        { key: "all", label: "All Project" },
+                      ]
+                    : undefined
+                }
+                activeHeaderTabKey={viewMode === "project" && accessMode === "PIC" ? projectScope : undefined}
+                onHeaderTabChange={
+                  viewMode === "project" && accessMode === "PIC"
+                    ? (key) => {
+                        const nextScope = key === "my" ? "my" : "all";
+                        setProjectScope(nextScope);
+                        window.sessionStorage.setItem("project-scope", nextScope);
+                      }
+                    : undefined
+                }
                 onCreate={viewMode === "project" ? (canCreateProject() ? goToCreateRoute : undefined) : (canCreateDepartment() ? goToCreateRoute : undefined)}
               />
             )}

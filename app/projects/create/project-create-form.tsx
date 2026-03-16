@@ -73,6 +73,8 @@ export function ProjectCreateForm() {
     },
   });
 
+  const isAdmin = currentUserQuery.data?.accessMode === "ADMIN";
+
   return (
     <Card className="shadow-sm" title="Create Project">
       <Form
@@ -97,22 +99,39 @@ export function ProjectCreateForm() {
           });
         }}
       >
-        <Form.Item name="deptId" hidden>
-          <Input type="hidden" />
-        </Form.Item>
-
-        <Form.Item label="Department">
-          <Input
-            readOnly
-            value={
-              selectedDepartment
-                ? selectedDepartment.partName
-                : departmentsQuery.isLoading
-                  ? "Loading..."
-                  : "No department assigned"
-            }
-          />
-        </Form.Item>
+        {isAdmin ? (
+          <Form.Item name="deptId" label="Department" rules={[{ required: true }]}>
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              loading={departmentsQuery.isLoading}
+              options={(departmentsQuery.data ?? []).map((dept) => ({
+                value: dept.partId,
+                label: dept.partName,
+              }))}
+              placeholder="Select a department"
+            />
+          </Form.Item>
+        ) : (
+          <>
+            <Form.Item name="deptId" hidden>
+              <Input type="hidden" />
+            </Form.Item>
+            <Form.Item label="Department">
+              <Input
+                readOnly
+                value={
+                  selectedDepartment
+                    ? selectedDepartment.partName
+                    : departmentsQuery.isLoading
+                      ? "Loading..."
+                      : "No department assigned"
+                }
+              />
+            </Form.Item>
+          </>
+        )}
         <Form.Item name="projectName" label="Project Name" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
