@@ -23,11 +23,7 @@ function getAvailableViewModes(accessMode: AccessMode) {
     return ["department", "project", "statistics"] as const;
   }
 
-  if (accessMode === "PIC") {
-    return ["project", "statistics"] as const;
-  }
-
-  return ["project"] as const;
+  return ["project", "statistics"] as const;
 }
 
 export function AppShell({ initialFullName, initialAccessMode, viewMode, children }: AppShellProps) {
@@ -179,7 +175,7 @@ export function AppShell({ initialFullName, initialAccessMode, viewMode, childre
                   message={`Profile error ${currentUserError.status}: ${currentUserError.message}`}
                 />
               ) : null}
-              {children}
+              {!isProfileLoading && children}
             </Space>
           </main>
         </div>

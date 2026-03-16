@@ -35,11 +35,7 @@ function getAvailableViewModes(accessMode: AccessMode) {
     return ["department", "project", "statistics"] as const;
   }
 
-  if (accessMode === "PIC") {
-    return ["project", "statistics"] as const;
-  }
-
-  return ["project"] as const;
+  return ["project", "statistics"] as const;
 }
 
 function getHttpErrorMessage(error: unknown) {
