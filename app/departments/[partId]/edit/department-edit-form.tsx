@@ -34,12 +34,12 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
     queryFn: getCurrentUser,
   });
 
-  const isAdmin = currentUserQuery.data?.accessMode === "ADMIN";
+  const canManagePic = currentUserQuery.data?.accessMode === "ADMIN" || currentUserQuery.data?.accessMode === "PIC";
 
   const picUsersQuery = useQuery({
     queryKey: ["users", "assignment", "PIC", partId],
     queryFn: () => getUsers({ assignmentType: "PIC", deptId: partId }),
-    enabled: isAdmin,
+    enabled: canManagePic,
   });
 
   const department = useMemo(
@@ -70,7 +70,7 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
   }
 
   return (
-    <Card className="shadow-sm" title={`Edit Department ${department.partId}`}>
+    <Card className="shadow-sm" title="Edit Department">
       <Form
         form={form}
         layout="vertical"
@@ -83,7 +83,7 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
           jiraSecPat: department.jiraSecPat,
           jiraMxPat: department.jiraMxPat,
           jiraLaPat: department.jiraLaPat,
-          departmentPicUsername: department.departmentPicUsername ?? undefined,
+          departmentPicUsernames: department.departmentPicUsernames ?? [],
         }}
         onFinish={(values) => {
           updateMutation.mutate({
@@ -96,13 +96,29 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
             jiraSecPat: values.jiraSecPat,
             jiraMxPat: values.jiraMxPat,
             jiraLaPat: values.jiraLaPat,
-            ...(isAdmin ? { departmentPicUsername: values.departmentPicUsername } : {}),
+            ...(canManagePic ? { departmentPicUsernames: values.departmentPicUsernames || [] } : {}),
           });
         }}
       >
         <Form.Item name="partName" label="Part Name" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
+        {canManagePic ? (
+          <Form.Item name="departmentPicUsernames" label="Department PIC Users">
+            <Select
+              mode="multiple"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              loading={picUsersQuery.isLoading}
+              options={(picUsersQuery.data ?? []).map((user) => ({
+                value: user.username,
+                label: `${user.fullname} (${user.username})`,
+              }))}
+              placeholder="Search and select PIC users"
+            />
+          </Form.Item>
+        ) : null}
         <Form.Item name="gitPat" label="Git PAT" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
@@ -124,22 +140,6 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
         <Form.Item name="jiraLaPat" label="Jira LA PAT" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
-        {isAdmin ? (
-          <Form.Item name="departmentPicUsername" label="Department PIC User">
-            <Select
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              loading={picUsersQuery.isLoading}
-              options={(picUsersQuery.data ?? []).map((user) => ({
-                value: user.username,
-                label: `${user.fullname} (${user.username})`,
-              }))}
-              placeholder="Search and select PIC user"
-            />
-          </Form.Item>
-        ) : null}
-
         <Space>
           <Button type="primary" htmlType="submit" loading={updateMutation.isPending}>
             Save

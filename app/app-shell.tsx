@@ -27,11 +27,7 @@ function getAvailableViewModes(accessMode: AccessMode) {
     return ["project", "statistics"] as const;
   }
 
-  if (accessMode === "PM") {
-    return ["project", "statistics"] as const;
-  }
-
-  return [] as const;
+  return ["project"] as const;
 }
 
 export function AppShell({ initialFullName, initialAccessMode, viewMode, children }: AppShellProps) {
@@ -83,9 +79,9 @@ export function AppShell({ initialFullName, initialAccessMode, viewMode, childre
           key: department.partId,
           title: department.partName,
           subtitle:
-            department.departmentPicUsername == null
+            !department.departmentPicUsernames?.length
               ? "PIC: Unassigned"
-              : `PIC User: ${department.departmentPicUsername}`,
+              : `PIC Users: ${department.departmentPicUsernames.join(", ")}`,
         }));
 
   useEffect(() => {
@@ -121,7 +117,7 @@ export function AppShell({ initialFullName, initialAccessMode, viewMode, childre
   }
 
   function canCreateProject() {
-    return accessMode === "PIC";
+    return accessMode === "ADMIN" || accessMode === "PIC";
   }
 
   function goToCreateRoute() {

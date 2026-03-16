@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Card, Empty, Form, Input, Select, Space, Typography, message } from "antd";
-import { getProjects, getUsers, HttpError, updateProjectData } from "@/lib/management-api";
+import { getCurrentUser, getProjects, getUsers, HttpError, updateProjectData } from "@/lib/management-api";
 
 type ProjectEditFormProps = {
   projectId: number;
@@ -36,6 +36,11 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
     queryFn: getProjects,
   });
 
+  const currentUserQuery = useQuery({
+    queryKey: ["current-user"],
+    queryFn: getCurrentUser,
+  });
+
   const project = useMemo(
     () => (projectsQuery.data ?? []).find((item) => item.id === projectId),
     [projectsQuery.data, projectId],
@@ -53,9 +58,11 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
 
   const usersQuery = useQuery({
     queryKey: ["users", "by-dept", project?.departmentId],
-    queryFn: () => getUsers({ assignmentType: "PM", deptId: project?.departmentId }),
+    queryFn: () => getUsers({ assignmentType: "PIC", deptId: project?.departmentId }),
     enabled: project?.departmentId != null,
   });
+
+  const canEditPicField = currentUserQuery.data?.accessMode === "ADMIN" || currentUserQuery.data?.accessMode === "PIC";
 
   if (projectsQuery.isLoading) {
     return <Card className="shadow-sm">Loading project...</Card>;
@@ -70,7 +77,7 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
   }
 
   return (
-    <Card className="shadow-sm" title={`Edit Project ${project.id}`}>
+    <Card className="shadow-sm" title="Edit Project">
       <Form
         form={form}
         layout="vertical"
@@ -81,31 +88,46 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
           notes: project.notes,
           taskManagements: project.taskManagements.join(", "),
           repositories: project.repositories.join(", "),
+          pics: project.pics,
           devWhiteList: project.devWhiteList,
         }}
         onFinish={(values) => {
           updateMutation.mutate({
             projectId,
-            deptId: values.deptId,
+            deptId: project.departmentId,
             projectName: values.projectName,
             branch: values.branch,
             notes: values.notes,
             taskManagements: parseCsv(values.taskManagements || ""),
             repositories: parseCsv(values.repositories || ""),
-            pics: project.pics,
+            pics: canEditPicField ? (values.pics || []) : project.pics,
             devWhiteList: values.devWhiteList || [],
           });
         }}
       >
-        <Form.Item name="deptId" label="Department ID" rules={[{ required: true }]}>
-          <Select
-            disabled
-            options={[{ value: project.departmentId, label: String(project.departmentId) }]}
-          />
-        </Form.Item>
         <Form.Item name="projectName" label="Project Name" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
+        {canEditPicField ? (
+          <Form.Item name="pics" label="PM Users">
+            <Select
+              mode="multiple"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              loading={usersQuery.isLoading}
+              options={(usersQuery.data ?? []).map((user) => ({
+                value: user.username,
+                label: `${user.fullname} (${user.username})`,
+              }))}
+              placeholder="Search and select PM users"
+            />
+          </Form.Item>
+        ) : (
+          <Form.Item label="PM Users">
+            <Input value={project.pics.length ? project.pics.join(", ") : "-"} readOnly />
+          </Form.Item>
+        )}
         <Form.Item name="branch" label="Branch" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
@@ -117,9 +139,6 @@ export function ProjectEditForm({ projectId }: ProjectEditFormProps) {
         </Form.Item>
         <Form.Item name="repositories" label="Repositories (comma separated)">
           <Input />
-        </Form.Item>
-        <Form.Item label="PICs (PM Usernames)">
-          <Input value={project.pics.length ? project.pics.join(", ") : "-"} readOnly />
         </Form.Item>
         <Form.Item name="devWhiteList" label="Dev White List (Usernames)">
           <Select

@@ -22,7 +22,7 @@ export default async function ProjectEditPage({ params }: RouteProps) {
   return (
     <AppShell
       initialFullName={session.user?.name ?? "Unknown User"}
-      initialAccessMode={session.role === "ROLE_ADMIN" ? "ADMIN" : "NONE"}
+      initialAccessMode={session.role === "ROLE_ADMIN" ? "ADMIN" : "USER"}
       viewMode="project"
     >
       <ProjectEditForm projectId={Number.isFinite(numericProjectId) ? numericProjectId : -1} />

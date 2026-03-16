@@ -1,4 +1,4 @@
-export type AccessMode = "ADMIN" | "PIC" | "PM" | "NONE";
+export type AccessMode = "ADMIN" | "PIC" | "USER";
 
 export type CurrentUser = {
   username: string;
@@ -6,18 +6,17 @@ export type CurrentUser = {
   email: string;
   accessMode: AccessMode;
   departmentPicPartIds: number[];
-  pmProjectIds: number[];
+
 };
 
 export type UserResponse = {
   username: string;
   fullname: string;
   email: string;
-  partId: number | null;
 };
 
 type GetUsersParams = {
-  assignmentType?: "PIC" | "PM";
+  assignmentType?: "PIC";
   deptId?: number;
 };
 
@@ -30,7 +29,7 @@ export type CreateDepartmentRequest = {
   jiraSecPat: string;
   jiraMxPat: string;
   jiraLaPat: string;
-  departmentPicUsername?: string;
+  departmentPicUsernames?: string[];
 };
 
 export type DepartmentResponse = {
@@ -43,7 +42,7 @@ export type DepartmentResponse = {
   jiraSecPat: string;
   jiraMxPat: string;
   jiraLaPat: string;
-  departmentPicUsername: string | null;
+  departmentPicUsernames: string[];
 };
 
 export type CreateProjectRequest = {
@@ -67,7 +66,7 @@ export type UpdateDepartmentRequest = {
   jiraSecPat: string;
   jiraMxPat: string;
   jiraLaPat: string;
-  departmentPicUsername?: string;
+  departmentPicUsernames?: string[];
 };
 
 export type ProjectResponse = {
@@ -230,7 +229,7 @@ export function updateDepartment(payload: UpdateDepartmentRequest) {
       jiraSecPat: payload.jiraSecPat,
       jiraMxPat: payload.jiraMxPat,
       jiraLaPat: payload.jiraLaPat,
-      departmentPicUsername: payload.departmentPicUsername,
+      departmentPicUsernames: payload.departmentPicUsernames,
     }),
   });
 }

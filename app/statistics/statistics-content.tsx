@@ -49,7 +49,6 @@ export function StatisticsContent() {
         columns={[
           { title: "Issue Key", dataIndex: "issueKey", width: 140, render: (value: string | null) => value ?? "-" },
           { title: "PR Number", dataIndex: "prNumber", width: 120, render: (value: number | null) => value ?? "-" },
-          { title: "Department ID", dataIndex: "departmentId", width: 140, render: (value: number | null) => value ?? "-" },
           { title: "Department Name", dataIndex: "departmentName", width: 180, render: (value: string | null) => value ?? "-" },
           { title: "Project", dataIndex: "project", width: 180, render: (value: string | null) => value ?? "-" },
           { title: "Created Time", dataIndex: "createdTime", width: 180, render: (value: string | null) => value ?? "-" },

@@ -12,7 +12,7 @@ export default async function ProjectsPage() {
   return (
     <HomeContent
       initialFullName={session.user?.name ?? "Unknown User"}
-      initialAccessMode={session.role === "ROLE_ADMIN" ? "ADMIN" : "NONE"}
+      initialAccessMode={session.role === "ROLE_ADMIN" ? "ADMIN" : "USER"}
       viewMode="project"
     />
   );

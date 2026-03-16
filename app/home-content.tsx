@@ -39,11 +39,7 @@ function getAvailableViewModes(accessMode: AccessMode) {
     return ["project", "statistics"] as const;
   }
 
-  if (accessMode === "PM") {
-    return ["project", "statistics"] as const;
-  }
-
-  return [] as const;
+  return ["project"] as const;
 }
 
 function getHttpErrorMessage(error: unknown) {
@@ -188,7 +184,7 @@ export function HomeContent({
   }
 
   function canCreateProject() {
-    return accessMode === "PIC";
+    return accessMode === "ADMIN" || accessMode === "PIC";
   }
 
   function canUpdateDepartment() {
@@ -200,11 +196,11 @@ export function HomeContent({
   }
 
   function canEditProjectData() {
-    return accessMode === "PIC" || accessMode === "PM";
+    return accessMode === "ADMIN" || accessMode === "PIC";
   }
 
   function canDeleteProjectData() {
-    return accessMode === "PIC";
+    return accessMode === "ADMIN" || accessMode === "PIC";
   }
 
   function goToCreateRoute() {
@@ -249,8 +245,6 @@ export function HomeContent({
           Project Detail
         </Typography.Title>
         <Descriptions column={1} bordered>
-          <Descriptions.Item label="Project ID">{project.id}</Descriptions.Item>
-          <Descriptions.Item label="Department ID">{project.departmentId}</Descriptions.Item>
           <Descriptions.Item label="Project Name">{project.projectName}</Descriptions.Item>
           <Descriptions.Item label="Branch">{project.branch || "-"}</Descriptions.Item>
           <Descriptions.Item label="Notes">{project.notes || "-"}</Descriptions.Item>
@@ -300,10 +294,11 @@ export function HomeContent({
           Department Detail
         </Typography.Title>
         <Descriptions column={1} bordered>
-          <Descriptions.Item label="Part ID">{department.partId}</Descriptions.Item>
           <Descriptions.Item label="Part Name">{department.partName}</Descriptions.Item>
           <Descriptions.Item label="Department PIC Username">
-            {department.departmentPicUsername ?? "Unassigned"}
+            {department.departmentPicUsernames?.length
+              ? department.departmentPicUsernames.join(", ")
+              : "Unassigned"}
           </Descriptions.Item>
           <Descriptions.Item label="Git PAT">{department.gitPat || "-"}</Descriptions.Item>
           <Descriptions.Item label="Ecode PAT">{department.ecodePat || "-"}</Descriptions.Item>
@@ -350,9 +345,9 @@ export function HomeContent({
           key: department.partId,
           title: department.partName,
           subtitle:
-            department.departmentPicUsername == null
+            !department.departmentPicUsernames?.length
               ? "PIC: Unassigned"
-              : `PIC User: ${department.departmentPicUsername}`,
+              : `PIC Users: ${department.departmentPicUsernames.join(", ")}`,
         }));
 
   const activeLeftbarId = viewMode === "project" ? selectedProjectId : selectedDepartmentId;
@@ -455,20 +450,16 @@ export function HomeContent({
                           })}
                           columns={[
                             {
-                              title: "Part ID",
-                              dataIndex: "partId",
-                              width: 120,
-                            },
-                            {
                               title: "Part Name",
                               dataIndex: "partName",
                               width: 180,
                             },
                             {
                               title: "Department PIC Username",
-                              dataIndex: "departmentPicUsername",
+                              dataIndex: "departmentPicUsernames",
                               width: 200,
-                              render: (value: string | null) => value ?? "Unassigned",
+                              render: (value: string[] | null) =>
+                                value && value.length ? value.join(", ") : "Unassigned",
                             },
                             {
                               title: "Git PAT",
@@ -542,16 +533,6 @@ export function HomeContent({
                           })}
                           scroll={{ x: 1200 }}
                           columns={[
-                            {
-                              title: "Project ID",
-                              dataIndex: "id",
-                              width: 120,
-                            },
-                            {
-                              title: "Department ID",
-                              dataIndex: "departmentId",
-                              width: 140,
-                            },
                             {
                               title: "Project Name",
                               dataIndex: "projectName",

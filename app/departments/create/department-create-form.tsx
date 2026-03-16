@@ -47,12 +47,26 @@ export function DepartmentCreateForm() {
             jiraSecPat: values.jiraSecPat,
             jiraMxPat: values.jiraMxPat,
             jiraLaPat: values.jiraLaPat,
-            departmentPicUsername: values.departmentPicUsername,
+            departmentPicUsernames: values.departmentPicUsernames || [],
           });
         }}
       >
         <Form.Item name="partName" label="Part Name" rules={[{ required: true }]}>
           <Input />
+        </Form.Item>
+        <Form.Item name="departmentPicUsernames" label="Department PIC Users">
+          <Select
+            mode="multiple"
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            loading={usersQuery.isLoading}
+            options={(usersQuery.data ?? []).map((user) => ({
+              value: user.username,
+              label: `${user.fullname} (${user.username})`,
+            }))}
+            placeholder="Search and select PIC users"
+          />
         </Form.Item>
         <Form.Item name="gitPat" label="Git PAT" rules={[{ required: true }]}>
           <Input />
@@ -75,20 +89,6 @@ export function DepartmentCreateForm() {
         <Form.Item name="jiraLaPat" label="Jira LA PAT" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
-        <Form.Item name="departmentPicUsername" label="Department PIC User">
-          <Select
-            allowClear
-            showSearch
-            optionFilterProp="label"
-            loading={usersQuery.isLoading}
-            options={(usersQuery.data ?? []).map((user) => ({
-              value: user.username,
-              label: `${user.fullname} (${user.username})`,
-            }))}
-            placeholder="Search and select PIC user"
-          />
-        </Form.Item>
-
         <Space>
           <Button type="primary" htmlType="submit" loading={createDepartmentMutation.isPending}>
             Submit
