@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { getServerAuthSession } from "@/auth";
-import { HomeContent } from "../home-content";
+import { resolveAccessMode } from "@/lib/auth-helpers";
+import { AppShell } from "@/app/app-shell";
+import { DepartmentView } from "@/features/dashboard/components/department-view";
 
 export default async function DepartmentsPage() {
   const session = await getServerAuthSession();
@@ -10,10 +12,12 @@ export default async function DepartmentsPage() {
   }
 
   return (
-    <HomeContent
+    <AppShell
       initialFullName={session.user?.name ?? "Unknown User"}
-      initialAccessMode={session.role === "ROLE_ADMIN" ? "ADMIN" : "USER"}
+      initialAccessMode={resolveAccessMode(session.role)}
       viewMode="department"
-    />
+    >
+      <DepartmentView />
+    </AppShell>
   );
 }

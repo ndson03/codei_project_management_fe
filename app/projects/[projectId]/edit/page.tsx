@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { getServerAuthSession } from "@/auth";
+import { resolveAccessMode } from "@/lib/auth-helpers";
 import { AppShell } from "@/app/app-shell";
-import { ProjectEditForm } from "./project-edit-form";
+import { ProjectEditForm } from "@/features/projects/components/project-edit-form";
 
 type RouteProps = {
   params: Promise<{
@@ -22,7 +23,7 @@ export default async function ProjectEditPage({ params }: RouteProps) {
   return (
     <AppShell
       initialFullName={session.user?.name ?? "Unknown User"}
-      initialAccessMode={session.role === "ROLE_ADMIN" ? "ADMIN" : "USER"}
+      initialAccessMode={resolveAccessMode(session.role)}
       viewMode="project"
     >
       <ProjectEditForm projectId={Number.isFinite(numericProjectId) ? numericProjectId : -1} />

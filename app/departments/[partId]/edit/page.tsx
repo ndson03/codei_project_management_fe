@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { getServerAuthSession } from "@/auth";
+import { resolveAccessMode } from "@/lib/auth-helpers";
 import { AppShell } from "@/app/app-shell";
-import { DepartmentEditForm } from "./department-edit-form";
+import { DepartmentEditForm } from "@/features/departments/components/department-edit-form";
 
 type RouteProps = {
   params: Promise<{
@@ -22,7 +23,7 @@ export default async function DepartmentEditPage({ params }: RouteProps) {
   return (
     <AppShell
       initialFullName={session.user?.name ?? "Unknown User"}
-      initialAccessMode={session.role === "ROLE_ADMIN" ? "ADMIN" : "USER"}
+      initialAccessMode={resolveAccessMode(session.role)}
       viewMode="department"
     >
       <DepartmentEditForm partId={Number.isFinite(numericPartId) ? numericPartId : -1} />

@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { getServerAuthSession } from "@/auth";
-import { HomeContent } from "../../home-content";
+import { resolveAccessMode } from "@/lib/auth-helpers";
+import { AppShell } from "@/app/app-shell";
+import { ProjectView } from "@/features/dashboard/components/project-view";
 
 type RouteProps = {
   params: Promise<{
@@ -17,13 +19,16 @@ export default async function ProjectDetailPage({ params }: RouteProps) {
 
   const { projectId } = await params;
   const numericProjectId = Number(projectId);
+  const selectedId = Number.isFinite(numericProjectId) ? numericProjectId : undefined;
 
   return (
-    <HomeContent
+    <AppShell
       initialFullName={session.user?.name ?? "Unknown User"}
-      initialAccessMode={session.role === "ROLE_ADMIN" ? "ADMIN" : "USER"}
+      initialAccessMode={resolveAccessMode(session.role)}
       viewMode="project"
-      selectedProjectId={Number.isFinite(numericProjectId) ? numericProjectId : undefined}
-    />
+      activeKey={selectedId}
+    >
+      <ProjectView selectedProjectId={selectedId} />
+    </AppShell>
   );
 }

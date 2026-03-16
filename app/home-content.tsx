@@ -2,21 +2,39 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Card, Descriptions, Empty, Layout, Popconfirm, Space, Table, Typography, message } from "antd";
-import { signOut } from "next-auth/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Alert, Button, Card, Empty, Layout, Space, Typography, message } from "antd";
 import {
   type AccessMode,
   type DepartmentResponse,
   deleteDepartment,
   deleteProject,
-  getCurrentUser,
-  getDepartments,
-  getProjects,
   type ProjectResponse,
   HttpError,
 } from "@/lib/management-api";
-import { TABLE_PAGE_SIZE_DEFAULT, TABLE_PAGE_SIZE_OPTIONS } from "@/lib/table-pagination";
+import { useAutoSignOutOnUnauthorized } from "@/features/dashboard/hooks/use-auto-signout-on-unauthorized";
+import { useDashboardContext } from "@/features/dashboard/hooks/use-dashboard-context";
+import { useProjectScope } from "@/features/dashboard/hooks/use-project-scope";
+import {
+  buildDepartmentLeftbarItems,
+  buildProjectLeftbarItems,
+  getDisplayedProjects,
+  getManagedProjects,
+} from "@/features/dashboard/lib/leftbar-items";
+import { buildProjectCreateRoute } from "@/features/dashboard/lib/navigation";
+import {
+  canCreateDepartment,
+  canCreateProject,
+  canDeleteDepartment,
+  canManageProjectByDepartment,
+  canUpdateDepartment,
+} from "@/features/dashboard/lib/permissions";
+import { TABLE_PAGE_SIZE_DEFAULT } from "@/lib/table-pagination";
+import { DepartmentDetailCard } from "@/features/dashboard/components/department-detail-card";
+import { DepartmentTable } from "@/features/dashboard/components/department-table";
+import { ProjectDetailCard } from "@/features/dashboard/components/project-detail-card";
+import { ProjectTable } from "@/features/dashboard/components/project-table";
+import { toViewModeRoute } from "@/features/dashboard/model/view-modes";
 import { CommonLeftbar } from "./common-leftbar";
 import { HomeHeader } from "./home-header";
 
@@ -29,14 +47,6 @@ type HomeContentProps = {
   selectedDepartmentId?: number;
   selectedProjectId?: number;
 };
-
-function getAvailableViewModes(accessMode: AccessMode) {
-  if (accessMode === "ADMIN") {
-    return ["department", "project", "statistics"] as const;
-  }
-
-  return ["project", "statistics"] as const;
-}
 
 function getHttpErrorMessage(error: unknown) {
   if (!(error instanceof HttpError)) {
@@ -57,26 +67,29 @@ export function HomeContent({
   const queryClient = useQueryClient();
   const mainScrollRef = useRef<HTMLDivElement | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [projectScope, setProjectScope] = useState<"my" | "all">("all");
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | undefined>(initialSelectedDepartmentId);
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(initialSelectedProjectId);
   const [departmentPagination, setDepartmentPagination] = useState({ current: 1, pageSize: TABLE_PAGE_SIZE_DEFAULT });
   const [projectPagination, setProjectPagination] = useState({ current: 1, pageSize: TABLE_PAGE_SIZE_DEFAULT });
 
-  const { data: currentUser, error: currentUserError, isLoading: isProfileLoading } = useQuery({
-    queryKey: ["current-user"],
-    queryFn: getCurrentUser,
+  const {
+    fullName,
+    accessMode,
+    availableViewModes,
+    departments,
+    projects,
+    managedDepartmentIds,
+    currentUserError,
+    departmentsError,
+    projectsError,
+    isProfileLoading,
+  } = useDashboardContext({
+    initialFullName,
+    initialAccessMode,
   });
+  const { projectScope, headerTabs, activeHeaderTabKey, onHeaderTabChange } = useProjectScope(accessMode);
 
-  const departmentsQuery = useQuery({
-    queryKey: ["departments"],
-    queryFn: getDepartments,
-  });
-
-  const projectsQuery = useQuery({
-    queryKey: ["projects"],
-    queryFn: getProjects,
-  });
+  useAutoSignOutOnUnauthorized([currentUserError, departmentsError, projectsError]);
 
   const deleteDepartmentMutation = useMutation({
     mutationFn: deleteDepartment,
@@ -120,46 +133,14 @@ export function HomeContent({
     },
   });
 
-  const fullName = currentUser?.fullname ?? initialFullName;
-  const accessMode = currentUser?.accessMode ?? initialAccessMode;
-  const availableViewModes = useMemo(() => {
-    const baseModes = [...getAvailableViewModes(accessMode)];
-
-    if (accessMode === "ADMIN") {
-      return ["department", ...baseModes.filter((mode) => mode !== "department")] as const;
-    }
-
-    if (currentUser?.departmentPicPartIds?.length) {
-      return ["department", ...baseModes.filter((mode) => mode !== "department")] as const;
-    }
-
-    return baseModes;
-  }, [accessMode, currentUser?.departmentPicPartIds]);
-
-  const departments = useMemo(() => departmentsQuery.data ?? [], [departmentsQuery.data]);
-  const projects = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
-  const managedDepartmentIds = useMemo(() => currentUser?.departmentPicPartIds ?? [], [currentUser?.departmentPicPartIds]);
-  const myProjects = useMemo(
-    () => projects.filter((project) => managedDepartmentIds.includes(project.departmentId)),
-    [projects, managedDepartmentIds],
-  );
+  const myProjects = useMemo(() => getManagedProjects(projects, managedDepartmentIds), [projects, managedDepartmentIds]);
   const displayedProjects = useMemo(
-    () => (projectScope === "my" ? myProjects : projects),
+    () => getDisplayedProjects(projects, myProjects, projectScope),
     [projectScope, myProjects, projects],
   );
 
   const selectedDepartment = departments.find((department) => department.partId === selectedDepartmentId);
   const selectedProject = projects.find((project) => project.id === selectedProjectId);
-
-  useEffect(() => {
-    const errors = [currentUserError, departmentsQuery.error, projectsQuery.error]
-      .filter((entry): entry is HttpError => entry instanceof HttpError)
-      .some((entry) => entry.status === 401);
-
-    if (errors) {
-      void signOut({ callbackUrl: "/login" });
-    }
-  }, [currentUserError, departmentsQuery.error, projectsQuery.error]);
 
   useEffect(() => {
     setSelectedDepartmentId(initialSelectedDepartmentId);
@@ -170,78 +151,26 @@ export function HomeContent({
   }, [initialSelectedProjectId]);
 
   useEffect(() => {
-    if (accessMode === "PIC") {
-      const savedScope = window.sessionStorage.getItem("project-scope");
-      if (savedScope === "my" || savedScope === "all") {
-        setProjectScope(savedScope);
-        return;
-      }
-      setProjectScope("all");
-      return;
-    }
-
-    setProjectScope("all");
-  }, [accessMode]);
-
-  useEffect(() => {
     if (availableViewModes.length === 0) {
       return;
     }
 
     if (!availableViewModes.some((mode) => mode === viewMode)) {
-      router.replace(
-        availableViewModes[0] === "department"
-          ? "/departments"
-          : availableViewModes[0] === "project"
-            ? "/projects"
-            : "/statistics",
-      );
+      router.replace(toViewModeRoute(availableViewModes[0]));
     }
   }, [availableViewModes, router, viewMode]);
 
-  function canCreateDepartment() {
-    return accessMode === "ADMIN";
-  }
-
-  function canCreateProject() {
-    return accessMode === "ADMIN" || accessMode === "PIC";
-  }
-
-  function canUpdateDepartment() {
-    return accessMode === "ADMIN" || accessMode === "PIC";
-  }
-
-  function canDeleteDepartment() {
-    return accessMode === "ADMIN";
-  }
-
   function canEditProjectData(project: ProjectResponse) {
-    if (accessMode === "ADMIN") {
-      return true;
-    }
-
-    if (accessMode === "PIC") {
-      return managedDepartmentIds.includes(project.departmentId);
-    }
-
-    return false;
+    return canManageProjectByDepartment(accessMode, managedDepartmentIds, project.departmentId);
   }
 
   function canDeleteProjectData(project: ProjectResponse) {
-    if (accessMode === "ADMIN") {
-      return true;
-    }
-
-    if (accessMode === "PIC") {
-      return managedDepartmentIds.includes(project.departmentId);
-    }
-
-    return false;
+    return canManageProjectByDepartment(accessMode, managedDepartmentIds, project.departmentId);
   }
 
   function goToCreateRoute() {
     if (viewMode === "department") {
-      if (!canCreateDepartment()) {
+      if (!canCreateDepartment(accessMode)) {
         message.error("Forbidden (403): You do not have permission to create department.");
         return;
       }
@@ -250,17 +179,19 @@ export function HomeContent({
       return;
     }
 
-    if (!canCreateProject()) {
+    if (!canCreateProject(accessMode)) {
       message.error("Forbidden (403): You do not have permission to create project.");
       return;
     }
 
-    const defaultDepartmentId =
-      selectedDepartmentId ??
-      (accessMode === "PIC" ? managedDepartmentIds[0] : undefined) ??
-      departments[0]?.partId;
-    const deptQuery = defaultDepartmentId ? `?deptId=${defaultDepartmentId}` : "";
-    router.push(`/projects/create${deptQuery}`);
+    router.push(
+      buildProjectCreateRoute({
+        accessMode,
+        selectedDepartmentId,
+        managedDepartmentIds,
+        departments,
+      }),
+    );
   }
 
   function handleLeftbarSelect(id: number) {
@@ -282,116 +213,35 @@ export function HomeContent({
       departments.find((department) => department.partId === project.departmentId)?.partName ?? "-";
 
     return (
-      <Card className="shadow-sm">
-        <Typography.Title level={4} className="!mb-4">
-          Project Detail
-        </Typography.Title>
-        <Descriptions column={1} bordered>
-          <Descriptions.Item label="Project Name">{project.projectName}</Descriptions.Item>
-          <Descriptions.Item label="PICs">
-            {project.pics.length ? project.pics.join(", ") : "-"}
-          </Descriptions.Item>
-          <Descriptions.Item label="Part Name">{projectDepartmentName}</Descriptions.Item>
-          <Descriptions.Item label="Branch">{project.branch || "-"}</Descriptions.Item>
-          <Descriptions.Item label="Notes">{project.notes || "-"}</Descriptions.Item>
-          <Descriptions.Item label="Task Managements">
-            {project.taskManagements.length ? project.taskManagements.join(", ") : "-"}
-          </Descriptions.Item>
-          <Descriptions.Item label="Repositories">
-            {project.repositories.length ? project.repositories.join(", ") : "-"}
-          </Descriptions.Item>
-          <Descriptions.Item label="Dev White List">
-            {project.devWhiteList.length ? project.devWhiteList.join(", ") : "-"}
-          </Descriptions.Item>
-        </Descriptions>
-
-        {canEditProjectData(project) ? (
-          <div className="mt-6">
-            <Space wrap>
-              <Button onClick={() => router.push(`/projects/${project.id}/edit`)}>
-                Edit Project Data
-              </Button>
-
-              {canDeleteProjectData(project) ? (
-                <Popconfirm
-                  title="Delete this project?"
-                  description="This action cannot be undone."
-                  okText="Delete"
-                  okButtonProps={{ danger: true, loading: deleteProjectMutation.isPending }}
-                  onConfirm={() => deleteProjectMutation.mutate(project.id)}
-                >
-                  <Button danger>Delete Project</Button>
-                </Popconfirm>
-              ) : null}
-            </Space>
-          </div>
-        ) : null}
-      </Card>
+      <ProjectDetailCard
+        project={project}
+        projectDepartmentName={projectDepartmentName}
+        canEdit={canEditProjectData(project)}
+        canDelete={canDeleteProjectData(project)}
+        deletePending={deleteProjectMutation.isPending}
+        onEdit={() => router.push(`/projects/${project.id}/edit`)}
+        onDelete={() => deleteProjectMutation.mutate(project.id)}
+      />
     );
   }
 
   function renderDepartmentDetail(department: DepartmentResponse) {
     return (
-      <Card className="shadow-sm">
-        <Typography.Title level={4} className="!mb-4">
-          Department Detail
-        </Typography.Title>
-        <Descriptions column={1} bordered>
-          <Descriptions.Item label="Part Name">{department.partName}</Descriptions.Item>
-          <Descriptions.Item label="Department PIC Username">
-            {department.departmentPicUsernames?.length
-              ? department.departmentPicUsernames.join(", ")
-              : "Unassigned"}
-          </Descriptions.Item>
-          <Descriptions.Item label="Git PAT">{department.gitPat || "-"}</Descriptions.Item>
-          <Descriptions.Item label="Ecode PAT">{department.ecodePat || "-"}</Descriptions.Item>
-          <Descriptions.Item label="Gerrit Username">{department.gerritUserName || "-"}</Descriptions.Item>
-          <Descriptions.Item label="Gerrit HTTP Password">{department.gerritHttpPassword || "-"}</Descriptions.Item>
-          <Descriptions.Item label="Jira SEC PAT">{department.jiraSecPat || "-"}</Descriptions.Item>
-          <Descriptions.Item label="Jira MX PAT">{department.jiraMxPat || "-"}</Descriptions.Item>
-          <Descriptions.Item label="Jira LA PAT">{department.jiraLaPat || "-"}</Descriptions.Item>
-        </Descriptions>
-
-        {canUpdateDepartment() ? (
-          <div className="mt-6">
-            <Space wrap>
-              <Button onClick={() => router.push(`/departments/${department.partId}/edit`)}>
-                Edit Department
-              </Button>
-
-              {canDeleteDepartment() ? (
-                <Popconfirm
-                  title="Delete this department?"
-                  description="This action cannot be undone."
-                  okText="Delete"
-                  okButtonProps={{ danger: true, loading: deleteDepartmentMutation.isPending }}
-                  onConfirm={() => deleteDepartmentMutation.mutate(department.partId)}
-                >
-                  <Button danger>Delete Department</Button>
-                </Popconfirm>
-              ) : null}
-            </Space>
-          </div>
-        ) : null}
-      </Card>
+      <DepartmentDetailCard
+        department={department}
+        canUpdate={canUpdateDepartment(accessMode)}
+        canDelete={canDeleteDepartment(accessMode)}
+        deletePending={deleteDepartmentMutation.isPending}
+        onEdit={() => router.push(`/departments/${department.partId}/edit`)}
+        onDelete={() => deleteDepartmentMutation.mutate(department.partId)}
+      />
     );
   }
 
   const leftbarItems =
     viewMode === "project"
-      ? displayedProjects.map((project) => ({
-          key: project.id,
-          title: project.projectName,
-          subtitle: project.pics.length ? `PICs: ${project.pics.join(", ")}` : "PICs: -",
-        }))
-      : departments.map((department) => ({
-          key: department.partId,
-          title: department.partName,
-          subtitle:
-            !department.departmentPicUsernames?.length
-              ? "PIC: Unassigned"
-              : `PIC Users: ${department.departmentPicUsernames.join(", ")}`,
-        }));
+      ? buildProjectLeftbarItems(displayedProjects)
+      : buildDepartmentLeftbarItems(departments);
 
   const activeLeftbarId = viewMode === "project" ? selectedProjectId : selectedDepartmentId;
 
@@ -420,25 +270,14 @@ export function HomeContent({
                 activeKey={activeLeftbarId}
                 onSelect={handleLeftbarSelect}
                 emptyText={viewMode === "project" ? "No projects found" : "No departments found"}
-                headerTabs={
-                  viewMode === "project" && accessMode === "PIC"
-                    ? [
-                        { key: "my", label: "My Project" },
-                        { key: "all", label: "All Project" },
-                      ]
-                    : undefined
+                headerTabs={viewMode === "project" ? headerTabs : undefined}
+                activeHeaderTabKey={viewMode === "project" ? activeHeaderTabKey : undefined}
+                onHeaderTabChange={viewMode === "project" ? onHeaderTabChange : undefined}
+                onCreate={
+                  viewMode === "project"
+                    ? (canCreateProject(accessMode) ? goToCreateRoute : undefined)
+                    : (canCreateDepartment(accessMode) ? goToCreateRoute : undefined)
                 }
-                activeHeaderTabKey={viewMode === "project" && accessMode === "PIC" ? projectScope : undefined}
-                onHeaderTabChange={
-                  viewMode === "project" && accessMode === "PIC"
-                    ? (key) => {
-                        const nextScope = key === "my" ? "my" : "all";
-                        setProjectScope(nextScope);
-                        window.sessionStorage.setItem("project-scope", nextScope);
-                      }
-                    : undefined
-                }
-                onCreate={viewMode === "project" ? (canCreateProject() ? goToCreateRoute : undefined) : (canCreateDepartment() ? goToCreateRoute : undefined)}
                 scrollStorageKey={viewMode === "project" ? "leftbar-scroll-project" : "leftbar-scroll-department"}
               />
             )}
@@ -474,7 +313,9 @@ export function HomeContent({
                           : "No departments available."
                       }
                     >
-                      {(viewMode === "department" ? canCreateDepartment() : canCreateProject()) ? (
+                      {(viewMode === "department"
+                        ? canCreateDepartment(accessMode)
+                        : canCreateProject(accessMode)) ? (
                         <Button type="primary" onClick={goToCreateRoute}>
                           {viewMode === "department" ? "Create Department" : "Create Project"}
                         </Button>
@@ -483,159 +324,20 @@ export function HomeContent({
                   ) : (
                     <>
                       {viewMode === "department" ? (
-                        <Table
-                          rowKey="partId"
-                          size="small"
-                          pagination={{
-                            current: departmentPagination.current,
-                            pageSize: departmentPagination.pageSize,
-                            total: departments.length,
-                            showSizeChanger: true,
-                            pageSizeOptions: [...TABLE_PAGE_SIZE_OPTIONS],
-                          }}
-                          sticky={{
-                            offsetHeader: 0,
-                            getContainer: () => mainScrollRef.current ?? document.body,
-                          }}
-                          dataSource={departments}
-                          onChange={(pagination) => {
-                            setDepartmentPagination({
-                              current: pagination.current ?? 1,
-                              pageSize: pagination.pageSize ?? TABLE_PAGE_SIZE_DEFAULT,
-                            });
-                          }}
-                          scroll={{ x: 2000 }}
-                          onRow={(record) => ({
-                            onClick: () => handleLeftbarSelect(record.partId),
-                            className: "cursor-pointer",
-                          })}
-                          columns={[
-                            {
-                              title: "Part Name",
-                              dataIndex: "partName",
-                              width: 180,
-                            },
-                            {
-                              title: "Department PIC Username",
-                              dataIndex: "departmentPicUsernames",
-                              width: 200,
-                              render: (value: string[] | null) =>
-                                value && value.length ? value.join(", ") : "Unassigned",
-                            },
-                            {
-                              title: "Git PAT",
-                              dataIndex: "gitPat",
-                              width: 180,
-                              render: (value: string) => value || "-",
-                            },
-                            {
-                              title: "Ecode PAT",
-                              dataIndex: "ecodePat",
-                              width: 180,
-                              render: (value: string) => value || "-",
-                            },
-                            {
-                              title: "Gerrit Username",
-                              dataIndex: "gerritUserName",
-                              width: 200,
-                              render: (value: string) => value || "-",
-                            },
-                            {
-                              title: "Gerrit HTTP Password",
-                              dataIndex: "gerritHttpPassword",
-                              width: 220,
-                              render: (value: string) => value || "-",
-                            },
-                            {
-                              title: "Jira SEC PAT",
-                              dataIndex: "jiraSecPat",
-                              width: 200,
-                              render: (value: string) => value || "-",
-                            },
-                            {
-                              title: "Jira MX PAT",
-                              dataIndex: "jiraMxPat",
-                              width: 200,
-                              render: (value: string) => value || "-",
-                            },
-                            {
-                              title: "Jira LA PAT",
-                              dataIndex: "jiraLaPat",
-                              width: 200,
-                              render: (value: string) => value || "-",
-                            },
-                          ]}
+                        <DepartmentTable
+                          departments={departments}
+                          pagination={departmentPagination}
+                          onPaginationChange={setDepartmentPagination}
+                          onRowSelect={handleLeftbarSelect}
+                          getStickyContainer={() => mainScrollRef.current ?? document.body}
                         />
                       ) : (
-                        <Table
-                          rowKey="id"
-                          size="small"
-                          pagination={{
-                            current: projectPagination.current,
-                            pageSize: projectPagination.pageSize,
-                            total: displayedProjects.length,
-                            showSizeChanger: true,
-                            pageSizeOptions: [...TABLE_PAGE_SIZE_OPTIONS],
-                          }}
-                          sticky={{
-                            offsetHeader: 0,
-                            getContainer: () => mainScrollRef.current ?? document.body,
-                          }}
-                          dataSource={displayedProjects}
-                          onChange={(pagination) => {
-                            setProjectPagination({
-                              current: pagination.current ?? 1,
-                              pageSize: pagination.pageSize ?? TABLE_PAGE_SIZE_DEFAULT,
-                            });
-                          }}
-                          onRow={(record) => ({
-                            onClick: () => handleLeftbarSelect(record.id),
-                            className: "cursor-pointer",
-                          })}
-                          scroll={{ x: 1200 }}
-                          columns={[
-                            {
-                              title: "Project Name",
-                              dataIndex: "projectName",
-                              width: 220,
-                            },
-                            {
-                              title: "Branch",
-                              dataIndex: "branch",
-                              width: 180,
-                              render: (value: string) => value || "-",
-                            },
-                            {
-                              title: "Notes",
-                              dataIndex: "notes",
-                              width: 220,
-                              render: (value: string) => value || "-",
-                            },
-                            {
-                              title: "Task Managements",
-                              dataIndex: "taskManagements",
-                              width: 220,
-                              render: (value: string[]) => (value.length ? value.join(", ") : "-"),
-                            },
-                            {
-                              title: "Repositories",
-                              dataIndex: "repositories",
-                              width: 220,
-                              render: (value: string[]) => (value.length ? value.join(", ") : "-"),
-                            },
-                            {
-                              title: "PICs",
-                              dataIndex: "pics",
-                              width: 180,
-                              render: (value: string[]) => (value.length ? value.join(", ") : "-"),
-                            },
-                            {
-                              title: "Dev White List",
-                              dataIndex: "devWhiteList",
-                              width: 220,
-                              render: (value: string[]) => (value.length ? value.join(", ") : "-"),
-                            },
-                          ]}
+                        <ProjectTable
+                          projects={displayedProjects}
+                          pagination={projectPagination}
+                          onPaginationChange={setProjectPagination}
+                          onRowSelect={handleLeftbarSelect}
+                          getStickyContainer={() => mainScrollRef.current ?? document.body}
                         />
                       )}
                     </>

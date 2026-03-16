@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { getServerAuthSession } from "@/auth";
+import { resolveAccessMode } from "@/lib/auth-helpers";
 import { AppShell } from "@/app/app-shell";
-import { StatisticsContent } from "./statistics-content";
+import { StatisticsContent } from "@/features/statistics/statistics-content";
 
 export default async function StatisticsPage() {
   const session = await getServerAuthSession();
@@ -13,7 +14,7 @@ export default async function StatisticsPage() {
   return (
     <AppShell
       initialFullName={session.user?.name ?? "Unknown User"}
-      initialAccessMode={session.role === "ROLE_ADMIN" ? "ADMIN" : "USER"}
+      initialAccessMode={resolveAccessMode(session.role)}
       viewMode="statistics"
     >
       <StatisticsContent />
