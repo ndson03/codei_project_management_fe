@@ -100,7 +100,7 @@ export function ProjectCreateForm() {
         }}
       >
         {isAdmin ? (
-          <Form.Item name="deptId" label="Department" rules={[{ required: true }]}>
+          <Form.Item name="deptId" label="Department">
             <Select
               allowClear
               showSearch
@@ -149,10 +149,10 @@ export function ProjectCreateForm() {
             placeholder="Search and select PM users"
           />
         </Form.Item>
-        <Form.Item name="branch" label="Branch" rules={[{ required: true }]}>
+        <Form.Item name="branch" label="Branch">
           <Input />
         </Form.Item>
-        <Form.Item name="notes" label="Notes" rules={[{ required: true }]}>
+        <Form.Item name="notes" label="Notes">
           <Input.TextArea rows={3} />
         </Form.Item>
         <Form.Item name="taskManagements" label="Task Managements (comma separated)">

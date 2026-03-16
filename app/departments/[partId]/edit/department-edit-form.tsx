@@ -119,25 +119,25 @@ export function DepartmentEditForm({ partId }: DepartmentEditFormProps) {
             />
           </Form.Item>
         ) : null}
-        <Form.Item name="gitPat" label="Git PAT" rules={[{ required: true }]}>
+        <Form.Item name="gitPat" label="Git PAT">
           <Input />
         </Form.Item>
-        <Form.Item name="ecodePat" label="Ecode PAT" rules={[{ required: true }]}>
+        <Form.Item name="ecodePat" label="Ecode PAT">
           <Input />
         </Form.Item>
-        <Form.Item name="gerritUserName" label="Gerrit Username" rules={[{ required: true }]}>
+        <Form.Item name="gerritUserName" label="Gerrit Username">
           <Input />
         </Form.Item>
-        <Form.Item name="gerritHttpPassword" label="Gerrit HTTP Password" rules={[{ required: true }]}>
+        <Form.Item name="gerritHttpPassword" label="Gerrit HTTP Password">
           <Input.Password />
         </Form.Item>
-        <Form.Item name="jiraSecPat" label="Jira SEC PAT" rules={[{ required: true }]}>
+        <Form.Item name="jiraSecPat" label="Jira SEC PAT">
           <Input />
         </Form.Item>
-        <Form.Item name="jiraMxPat" label="Jira MX PAT" rules={[{ required: true }]}>
+        <Form.Item name="jiraMxPat" label="Jira MX PAT">
           <Input />
         </Form.Item>
-        <Form.Item name="jiraLaPat" label="Jira LA PAT" rules={[{ required: true }]}>
+        <Form.Item name="jiraLaPat" label="Jira LA PAT">
           <Input />
         </Form.Item>
         <Space>

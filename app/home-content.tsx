@@ -278,6 +278,9 @@ export function HomeContent({
   }
 
   function renderProjectDetail(project: ProjectResponse) {
+    const projectDepartmentName =
+      departments.find((department) => department.partId === project.departmentId)?.partName ?? "-";
+
     return (
       <Card className="shadow-sm">
         <Typography.Title level={4} className="!mb-4">
@@ -285,6 +288,7 @@ export function HomeContent({
         </Typography.Title>
         <Descriptions column={1} bordered>
           <Descriptions.Item label="Project Name">{project.projectName}</Descriptions.Item>
+          <Descriptions.Item label="Part Name">{projectDepartmentName}</Descriptions.Item>
           <Descriptions.Item label="Branch">{project.branch || "-"}</Descriptions.Item>
           <Descriptions.Item label="Notes">{project.notes || "-"}</Descriptions.Item>
             <Descriptions.Item label="Task Managements">
