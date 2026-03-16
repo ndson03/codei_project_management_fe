@@ -288,21 +288,21 @@ export function HomeContent({
         </Typography.Title>
         <Descriptions column={1} bordered>
           <Descriptions.Item label="Project Name">{project.projectName}</Descriptions.Item>
+          <Descriptions.Item label="PICs">
+            {project.pics.length ? project.pics.join(", ") : "-"}
+          </Descriptions.Item>
           <Descriptions.Item label="Part Name">{projectDepartmentName}</Descriptions.Item>
           <Descriptions.Item label="Branch">{project.branch || "-"}</Descriptions.Item>
           <Descriptions.Item label="Notes">{project.notes || "-"}</Descriptions.Item>
-            <Descriptions.Item label="Task Managements">
-              {project.taskManagements.length ? project.taskManagements.join(", ") : "-"}
-            </Descriptions.Item>
+          <Descriptions.Item label="Task Managements">
+            {project.taskManagements.length ? project.taskManagements.join(", ") : "-"}
+          </Descriptions.Item>
           <Descriptions.Item label="Repositories">
             {project.repositories.length ? project.repositories.join(", ") : "-"}
           </Descriptions.Item>
-            <Descriptions.Item label="PICs">
-              {project.pics.length ? project.pics.join(", ") : "-"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Dev White List">
-              {project.devWhiteList.length ? project.devWhiteList.join(", ") : "-"}
-            </Descriptions.Item>
+          <Descriptions.Item label="Dev White List">
+            {project.devWhiteList.length ? project.devWhiteList.join(", ") : "-"}
+          </Descriptions.Item>
         </Descriptions>
 
         {canEditProjectData(project) ? (
