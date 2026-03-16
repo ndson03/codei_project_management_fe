@@ -252,7 +252,7 @@ export async function deleteDepartment(deptId: number) {
 }
 
 export function updateProjectData(payload: CreateProjectRequest & { projectId: number }) {
-  return requestJson<ProjectResponse>(`/api/projects/${payload.projectId}/data`, {
+  return requestJson<ProjectResponse>(`/api/projects/${payload.projectId}`, {
     method: "PUT",
     body: JSON.stringify({
       projectName: payload.projectName,
