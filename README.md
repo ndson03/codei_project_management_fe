@@ -29,17 +29,36 @@ Next.js App Router project with NextAuth credentials login integrated to backend
 
 ## Environment Variables
 
-Create `.env.local`:
+Copy `.env.example` to `.env.local` and fill in the values:
 
 ```bash
-BACKEND_BASE_URL=http://localhost:8080
-NEXTAUTH_SECRET=replace-with-a-long-random-secret
-NEXTAUTH_URL=http://localhost:3000
+cp .env.example .env.local
 ```
+
+| Variable | Description |
+|---|---|
+| `BACKEND_BASE_URL` | Base URL of the backend API (e.g. `http://localhost:8080`) |
+| `NEXTAUTH_SECRET` | Long random secret used by NextAuth to sign/encrypt tokens. Generate one with `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | Full URL your app is served on (e.g. `http://localhost:3000`). Required in production. |
+
+> **Note:** All three variables are required. Missing `NEXTAUTH_SECRET` or `NEXTAUTH_URL` will cause NextAuth errors at runtime.
 
 ## Getting Started
 
-Run the development server:
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Copy and configure environment variables:
+
+```bash
+cp .env.example .env.local
+# Edit .env.local with your values
+```
+
+3. Run the development server:
 
 ```bash
 npm run dev
